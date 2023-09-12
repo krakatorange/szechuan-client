@@ -25,7 +25,7 @@ export function UserAuthContextProvider({ children }) {
     };
   }, []);
 
-  function recapchaVerify(phone) {
+  function recaptchaVerify(phone) {
     const recaptchaVerifier = new RecaptchaVerifier(
       auth,
       "recaptcha-container",
@@ -53,7 +53,7 @@ export function UserAuthContextProvider({ children }) {
 
   const value = {
     user,
-    recapchaVerify,
+    recaptchaVerify,
     verifyCode,
     signOut,
   };

@@ -17,7 +17,7 @@ function SignUp() {
   const [codeSent, setCodeSent] = useState(false);
   const [confirmOTP, setConfirmOTP] = useState("")
   const [verificationCode, setVerificationCode] = useState("");
-  const {recapchaVerify} = useUserAuth();
+  const {recaptchaVerify} = useUserAuth();
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [isVerified, setIsVerified] = useState(false);
@@ -33,7 +33,7 @@ function SignUp() {
     if(phone === "" || phone === undefined)
     return setError("Please enter a Valid Phone Number!")
     try {
-      const response = await recapchaVerify(phone);
+      const response = await recaptchaVerify(phone);
       console.log(response);
       setConfirmOTP(response);
       setIsVerified(true);
