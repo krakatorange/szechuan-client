@@ -6,17 +6,18 @@ import UploadFile from './Components/Upload_File';
 import Dashboard from './Components/Dashboard';
 import Events from './Components/Events';
 import { UserAuthContextProvider } from './UserContextProvider'; // Update the path accordingly
+import ProtectedRoute from "./Protected-Route";
 
 function App() {
   return (
     <Router>
       <UserAuthContextProvider>
         <Routes>
-          <Route path='/dashboard' element={<Dashboard />} />
-          <Route path="/" element={<Dashboard />} />
+          <Route path='/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/signup" element={<SignUp />} />
-          <Route path='/uploadfile/:eventId' element={<UploadFile/>}/>
-          <Route path='/events' element={<Events/>}/>
+          <Route path='/uploadfile/:eventId' element={<ProtectedRoute><UploadFile/></ProtectedRoute>}/>
+          <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
         </Routes>
       </UserAuthContextProvider>
     </Router>
