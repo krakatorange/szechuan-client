@@ -74,12 +74,12 @@ function SignUp() {
           <div className="text-center mb-4">
             <img
               src={logo}
-              alt="Logo"
+              alt=""
               style={{ width: "150px", height: "150px" }}
             />
             <img
               src={text_logo}
-              alt="Text Logo"
+              alt=""
               style={{ width: "150px", height: "150px" }}
             />
           </div>
