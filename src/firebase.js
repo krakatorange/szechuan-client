@@ -23,6 +23,7 @@ const app = initializeApp(firebaseConfig);
 // console.log("Firebase app initialized: ", app);
 // console.log("firebase analytics: ", analytics)
 
+
 // Initialize Firestore
 export const db = getFirestore(app); // Add Firestore initialization
 export const auth = getAuth(app);

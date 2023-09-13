@@ -12,12 +12,13 @@ export function useUserAuth() {
   return useContext(UserAuthContext);
 }
 
-export function UserAuthContextProvider({ children }) {
+export function UserAuthContextProvider({children}) {
   const [user, setUser] = useState(null); // Store user information
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
-      setUser(authUser);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log("Auth", currentUser);
+      setUser(currentUser);
     });
 
     return () => {
@@ -32,7 +33,9 @@ export function UserAuthContextProvider({ children }) {
       {}
     );
     recaptchaVerifier.render();
-    return signInWithPhoneNumber(auth, phone, recaptchaVerifier);
+
+    // Perform phone number verification
+    return signInWithPhoneNumber(auth, phone, recaptchaVerifier)
   }
 
   function verifyCode(verificationCode) {

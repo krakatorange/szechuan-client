@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
-import { useNavigate} from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import "react-phone-number-input/style.css";
 import PhoneInput from "react-phone-number-input";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -15,9 +15,9 @@ function SignUp() {
   const [phone, setPhone] = useState("");
   const [isValidNumber, setIsValidNumber] = useState(true);
   const [codeSent, setCodeSent] = useState(false);
-  const [confirmOTP, setConfirmOTP] = useState("")
+  const [confirmOTP, setConfirmOTP] = useState({});
   const [verificationCode, setVerificationCode] = useState("");
-  const {recaptchaVerify} = useUserAuth();
+  const { recaptchaVerify} = useUserAuth();
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [isVerified, setIsVerified] = useState(false);
@@ -30,35 +30,34 @@ function SignUp() {
     } else {
       setIsValidNumber(false);
     }
-    if(phone === "" || phone === undefined)
-    return setError("Please enter a Valid Phone Number!")
+    if (phone === "" || phone === undefined)
+      return setError("Please enter a Valid Phone Number!");
     try {
       const response = await recaptchaVerify(phone);
       console.log(response);
       setConfirmOTP(response);
       setIsVerified(true);
-      
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     }
   };
 
   const verifyOtp = async (e) => {
     e.preventDefault();
-
+  
     console.log(verificationCode);
-    if(verificationCode === "" || verificationCode === null) return;
-    try{
+    if (verificationCode === "" || verificationCode === null) return;
+    try {
       setError("");
       setIsLoading(true);
       await confirmOTP.confirm(verificationCode);
+
 
       setTimeout(() => {
         setIsLoading(false); // Set isLoading to false
         navigate("/dashboard");
       }, 2000);
-    }
-    catch (err){
+    } catch (err) {
       setIsLoading(false);
       setError(err.message);
     }
@@ -107,13 +106,15 @@ function SignUp() {
               />
               <div
                 className="text-muted mt-2"
-                style={{ fontSize: "0.675rem", opacity: 0.6, fontStyle: "italic" }}
+                style={{
+                  fontSize: "0.675rem",
+                  opacity: 0.6,
+                  fontStyle: "italic",
+                }}
               >
                 We will send you a verification code
               </div>
-              {!isVerified && (
-                <div id="recaptcha-container"/>
-              )}
+              {!isVerified && <div id="recaptcha-container" />}
               {!isValidNumber && (
                 <div className="text-danger" style={{ fontSize: "0.875rem" }}>
                   Invalid phone number
@@ -131,35 +132,38 @@ function SignUp() {
                   />
                 </Form.Group>
                 <Button
-                variant="primary"
-                className="w-100"
-                onClick={verifyOtp}
-                style={{
-                  backgroundColor: "#007bff",
-                  position: "relative", // Add position relative for the parent container
-                }}
-              >
-                Verify Code
-                {isLoading && ( // Display loading overlay if isLoading is true
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent white background
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
+                  variant="primary"
+                  className="w-100"
+                  onClick={verifyOtp}
+                  style={{
+                    backgroundColor: "#007bff",
+                    position: "relative", // Add position relative for the parent container
+                  }}
+                >
+                  Verify Code
+                  {isLoading && ( // Display loading overlay if isLoading is true
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent white background
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        className="spinner-border text-primary"
+                        role="status"
+                      >
+                        <span className="visually-hidden">Loading...</span>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Button>
+                  )}
+                </Button>
               </div>
             ) : (
               <Button
