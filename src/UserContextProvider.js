@@ -3,6 +3,7 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   onAuthStateChanged,
+  signOut
 } from "firebase/auth";
 import { auth } from "./firebase";
 
@@ -17,8 +18,16 @@ export function UserAuthContextProvider({children}) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("Auth", currentUser);
-      setUser(currentUser);
+      if(currentUser){
+        console.log("Auth", currentUser);
+        localStorage.setItem("currentUser", JSON.stringify(currentUser))
+        setUser(currentUser);
+      }
+      else {
+        // when the user is signed out
+        console.log('user logged out')
+        localStorage.removeItem('currentUser')
+      }
     });
 
     return () => {
@@ -46,9 +55,11 @@ export function UserAuthContextProvider({children}) {
     }
   }
 
-  function signOut() {
+  function logOut() {
     try {
       // Implement your sign-out logic using Firebase's signOut
+        localStorage.removeItem("currentUser")
+        return signOut(auth);
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -58,7 +69,7 @@ export function UserAuthContextProvider({children}) {
     user,
     recaptchaVerify,
     verifyCode,
-    signOut,
+    logOut,
   };
 
   return (

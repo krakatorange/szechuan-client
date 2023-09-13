@@ -38,10 +38,10 @@ function UploadFile() {
           },
         })
         .then(() => {
-          console.log("Upload successful"); // Add this line
+          // console.log("Upload successful"); // Add this line
           alert("Files uploaded successfully.");
           setSelectedFiles([]); // Clear the selected files
-          console.log("Selected files cleared"); // Add this line
+          // console.log("Selected files cleared"); // Add this line
 
           axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
             .then((response) => {
