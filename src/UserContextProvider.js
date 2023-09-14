@@ -19,13 +19,13 @@ export function UserAuthContextProvider({children}) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if(currentUser){
-        console.log("Auth", currentUser);
+        // console.log("Auth", currentUser);
         localStorage.setItem("currentUser", JSON.stringify(currentUser))
         setUser(currentUser);
       }
       else {
         // when the user is signed out
-        console.log('user logged out')
+        // console.log('user logged out')
         localStorage.removeItem('currentUser')
       }
     });

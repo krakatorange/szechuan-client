@@ -33,7 +33,7 @@ function EventPage() {
       // Use Axios to make a POST request to your API endpoint
       const response = await axios.post(`${process.env.REACT_APP_API}/events/create`, formData);
   
-      console.log('Event created successfully:', response.data);
+      // console.log('Event created successfully:', response.data);
       setEventName('');
       setEventDateTime('');
       setEventLocation('');
