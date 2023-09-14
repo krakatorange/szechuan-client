@@ -5,13 +5,13 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 
-function UploadFile() {
-  const { eventId } = useParams();
+function Selfie_Upload() {
+  const { eventId} = useParams();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [event, setEvent] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
   const {user} = useUserAuth();
-  const userId = user?.uid
+  const userId = user?.uid;
   const fileInputRef = useRef(null);
 
   const handleFileInputChange = (event) => {
@@ -28,22 +28,22 @@ function UploadFile() {
       // Create a FormData object to send files to the server
       const formData = new FormData();
       selectedFiles.forEach((file) => {
-        formData.append(`galleryImage`, file);
+        formData.append(`selfieImage`, file);
       });
 
       // Send a POST request to the server to upload files
-      axios.post(`${process.env.REACT_APP_API}/events/${eventId}/upload`, formData, {
+      axios.post(`${process.env.REACT_APP_API}/events/${userId}/selfie`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         })
-        .then((response) => {
+        .then(() => {
           console.log("Upload successful"); // Add this line
           alert("Files uploaded successfully.");
           setSelectedFiles([]); // Clear the selected files
           console.log("Selected files cleared"); // Add this line
 
-          axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+          axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
             .then((response) => {
               setGalleryImages(response.data);
             })
@@ -59,38 +59,14 @@ function UploadFile() {
   };
 
   useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API}/events/all/${userId}`)
-      .then((response) => {
-        const eventid = eventId; // Replace with your logic to get the eventId
-        const selectedEvent = response.data.find(
-          (event) => event.id === eventid
-        );
-        setEvent(selectedEvent);
-      })
-      .catch((error) => {
-        console.error("Error fetching event data: ", error);
-      });
-
-    axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+    axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
       .then((response) => {
         setGalleryImages(response.data);
       })
       .catch((error) => {
         console.error("Error fetching gallery images: ", error);
       });
-      axios
-      .post(`${process.env.REACT_APP_API}/events/detect-face`, {
-        userId: userId,
-        eventId: eventId,
-      })
-      .then((response) => {
-        console.log("Face detection completed:", response.data.message);
-        // Handle the response as needed
-      })
-      .catch((error) => {
-        console.error("Error detecting face:", error);
-      });
-  }, [eventId, userId]);
+  }, [userId]);
 
   return (
     <Container>
@@ -195,4 +171,4 @@ function UploadFile() {
   );
 }
 
-export default UploadFile;
+export default Selfie_Upload;
