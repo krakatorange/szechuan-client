@@ -14,8 +14,8 @@ function App() {
     <Router>
       <UserAuthContextProvider>
         <Routes>
-          <Route path='/dashboard' element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path='/dashboard' element={<ProtectedRoute ><Dashboard /></ProtectedRoute>} />
+          <Route path="/" element={<ProtectedRoute ><Dashboard /></ProtectedRoute>} />
           <Route path="/signup" element={<SignUp />} />
           <Route path='/uploadfile/:eventId' element={<ProtectedRoute><UploadFile/></ProtectedRoute>}/>
           <Route path='/selfie/:userId' element={<Selfie_Upload/>}/>

@@ -34,7 +34,7 @@ function SignUp() {
       return setError("Please enter a Valid Phone Number!");
     try {
       const response = await recaptchaVerify(phone);
-      console.log(response);
+      // console.log("recaptcha response: ", response);
       setConfirmOTP(response);
       setIsVerified(true);
     } catch (err) {
@@ -45,13 +45,12 @@ function SignUp() {
   const verifyOtp = async (e) => {
     e.preventDefault();
   
-    console.log(verificationCode);
+    // console.log(verificationCode);
     if (verificationCode === "" || verificationCode === null) return;
     try {
       setError("");
       setIsLoading(true);
       await confirmOTP.confirm(verificationCode);
-
 
       setTimeout(() => {
         setIsLoading(false); // Set isLoading to false

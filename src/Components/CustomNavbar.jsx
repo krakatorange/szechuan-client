@@ -7,17 +7,17 @@ import { useUserAuth } from "../UserContextProvider";
 function CustomNavbar() {
   const [showDrawer, setShowDrawer] = useState(false);
   const navigate = useNavigate();
-  const {user, signOut} = useUserAuth();
+  const { user, logOut } = useUserAuth();
 
   const toggleDrawer = () => {
     setShowDrawer(!showDrawer);
   };
 
-  const handleSignOut = () => {
+  const handleLogOut = () => {
     // Perform sign-out logic here (e.g., clearing authentication state)
     // Then navigate to the signup component
     // Example: clearAuthenticationState();
-    signOut();
+    logOut();
     navigate("/signup");
   };
 
@@ -56,7 +56,7 @@ function CustomNavbar() {
               <p>Phone: {user.phoneNumber}</p>
             )}
             {/* Display user information here */}
-            <Button onClick={handleSignOut}>Sign Out</Button>
+            <Button onClick={handleLogOut}>Sign Out</Button>
           </div>
           {/* Overlay for closing the drawer */}
           <div className="drawer-overlay" onClick={toggleDrawer}></div>
