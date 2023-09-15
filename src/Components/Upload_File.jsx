@@ -121,9 +121,9 @@ function UploadFile() {
             <Card.Title>{event.eventName}</Card.Title>
             <Card.Text>Event Date/Time: {event.eventDateTime}</Card.Text>
             <Card.Text>Location: {event.eventLocation}</Card.Text>
-            <Card.Text>
-              Time remaining: {/* Implement time remaining logic */}
-            </Card.Text>
+            <button>All Photos</button>
+            <button>Personal Gallery</button>
+            {/*<button>Invite</button>*/}
           </Card.Body>
         </Card>
       )}
@@ -145,10 +145,10 @@ function UploadFile() {
         />
       </div>
       <div className="gallery mt-4">
-        {galleryImages.map((imageUrl, index) => (
+        {galleryImages.map((item, index) => (
           <div key={index} className="gallery-item">
             <img
-              src={imageUrl}
+              src={item.imageUrl}
               alt={`Uploaded ${index}`}
               className="gallery-img"
             />
