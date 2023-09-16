@@ -17,11 +17,12 @@ function SignUp() {
   const [codeSent, setCodeSent] = useState(false);
   const [confirmOTP, setConfirmOTP] = useState({});
   const [verificationCode, setVerificationCode] = useState("");
-  const { recaptchaVerify} = useUserAuth();
+  const { recaptchaVerify, user} = useUserAuth();
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const userId = user?.uid;
 
   const handleSendVerificationCode = async () => {
     setError("");
@@ -44,17 +45,25 @@ function SignUp() {
 
   const verifyOtp = async (e) => {
     e.preventDefault();
-  
-    // console.log(verificationCode);
+    
     if (verificationCode === "" || verificationCode === null) return;
     try {
       setError("");
       setIsLoading(true);
+  
       await confirmOTP.confirm(verificationCode);
-
+  
       setTimeout(() => {
-        setIsLoading(false); // Set isLoading to false
-        navigate("/dashboard");
+        setIsLoading(false);
+  
+        // Check if the user is new or existing
+        if (confirmOTP.user?.isNewUser) {
+          // If the user is new, navigate to /${userId}/selfie
+          navigate(`/${userId}/selfie`);
+        } else {
+          // If the user exists, navigate to /dashboard
+          navigate("/dashboard");
+        }
       }, 2000);
     } catch (err) {
       setIsLoading(false);
