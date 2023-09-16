@@ -21,6 +21,7 @@ function UploadFile() {
   const navigate = useNavigate();
   const [galleryURL, setGalleryURL] = useState("");
   const [showQRModal, setShowQRModal] = useState(false);
+  const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
@@ -137,6 +138,7 @@ function UploadFile() {
     axios
       .post(`${process.env.REACT_APP_API}/events/access/${eventId}`, {
           userId: userId,
+          galleryUrl: galleryUrl,
       })
       .then(() => {
         // Access granted successfully

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Container, Card } from 'react-bootstrap';
 import CustomNavbar from './CustomNavbar';
 import NotificationBox from './NotificationBox';
+//import GalleryLink from './galleryUrl';
 import axios from 'axios';
 import { useUserAuth } from "../UserContextProvider";
 
 function Dashboard() {
   const [events, setEvents] = useState([]); // Use 'events' instead of 'eventInfo'
   const { user } = useUserAuth();
-  const userId = user?.uid
+  const userId = user?.uid;
 
   useEffect(() => {
     // Fetch event information from the server
