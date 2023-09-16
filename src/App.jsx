@@ -18,7 +18,7 @@ function App() {
           <Route path="/" element={<ProtectedRoute ><Dashboard /></ProtectedRoute>} />
           <Route path="/signup" element={<SignUp />} />
           <Route path='/uploadfile/:eventId' element={<ProtectedRoute><UploadFile/></ProtectedRoute>}/>
-          <Route path='/selfie/:userId' element={<Selfie_Upload/>}/>
+          <Route path='/selfie/:userId' element={<ProtectedRoute><Selfie_Upload/></ProtectedRoute>}/>
           <Route path='/events' element={<ProtectedRoute><Events/></ProtectedRoute>}/>
         </Routes>
       </UserAuthContextProvider>

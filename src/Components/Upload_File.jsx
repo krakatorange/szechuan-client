@@ -4,15 +4,20 @@ import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
+import { useNavigate } from "react-router-dom";
 
 function UploadFile() {
   const { eventId } = useParams();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [event, setEvent] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
-  const {user} = useUserAuth();
-  const userId = user?.uid
+  const [showAllPhotos, setShowAllPhotos] = useState(true); // Add state for toggling between all photos and personal photos
+  const [loading, setLoading] = useState(true); // Add loading state for fetching matched images
+  const [matchedImages, setMatchedImages] = useState([]); // Add state to store matched images
+  const { user } = useUserAuth();
+  const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
@@ -32,18 +37,18 @@ function UploadFile() {
       });
 
       // Send a POST request to the server to upload files
-      axios.post(`${process.env.REACT_APP_API}/events/${eventId}/upload`, formData, {
+      axios
+        .post(`${process.env.REACT_APP_API}/events/${eventId}/upload`, formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         })
         .then(() => {
-          // console.log("Upload successful"); // Add this line
           alert("Files uploaded successfully.");
           setSelectedFiles([]); // Clear the selected files
-          // console.log("Selected files cleared"); // Add this line
 
-          axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+          axios
+            .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
             .then((response) => {
               setGalleryImages(response.data);
             })
@@ -58,10 +63,27 @@ function UploadFile() {
     }
   };
 
-  useEffect(() => {
-    axios.get(`${process.env.REACT_APP_API}/events/all/${userId}`)
+  const fetchMatchedImages = () => {
+    const apiUrl = `${process.env.REACT_APP_API}/events/matched/${userId}/${eventId}`;
+
+    // Fetch matched images when the component mounts
+    axios
+      .get(apiUrl)
       .then((response) => {
-        const eventid = eventId; // Replace with your logic to get the eventId
+        setMatchedImages(response.data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error('Error fetching matched images:', error);
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    axios
+      .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
+      .then((response) => {
+        const eventid = eventId;
         const selectedEvent = response.data.find(
           (event) => event.id === eventid
         );
@@ -71,7 +93,8 @@ function UploadFile() {
         console.error("Error fetching event data: ", error);
       });
 
-    axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+    axios
+      .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
         setGalleryImages(response.data);
       })
@@ -90,6 +113,7 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error detecting face:", error);
       });
+
   }, [eventId, userId]);
 
   return (
@@ -121,9 +145,15 @@ function UploadFile() {
             <Card.Title>{event.eventName}</Card.Title>
             <Card.Text>Event Date/Time: {event.eventDateTime}</Card.Text>
             <Card.Text>Location: {event.eventLocation}</Card.Text>
-            <button>All Photos</button>
-            <button>Personal Gallery</button>
-            {/*<button>Invite</button>*/}
+            <button onClick={() => setShowAllPhotos(true)}>All Photos</button>
+            <button
+              onClick={() => {
+                setShowAllPhotos(false);
+                fetchMatchedImages(); // Fetch matched images when the user clicks "Personal Gallery"
+              }}
+            >
+              Personal Gallery
+            </button>
           </Card.Body>
         </Card>
       )}
@@ -145,15 +175,27 @@ function UploadFile() {
         />
       </div>
       <div className="gallery mt-4">
-        {galleryImages.map((item, index) => (
-          <div key={index} className="gallery-item">
-            <img
-              src={item.imageUrl}
-              alt={`Uploaded ${index}`}
-              className="gallery-img"
-            />
-          </div>
-        ))}
+        {showAllPhotos ? (
+          galleryImages.map((item, index) => (
+            <div key={index} className="gallery-item">
+              <img
+                src={item.imageUrl}
+                alt={`Uploaded ${index}`}
+                className="gallery-img"
+              />
+            </div>
+          ))
+        ) : (
+          matchedImages.map((item, index) => (
+            <div key={index} className="gallery-item">
+              <img
+                src={item.matchedImageUrl}
+                alt={`Matched ${index}`}
+                className="gallery-img"
+              />
+            </div>
+          ))
+        )}
       </div>
       <style>
         {`
