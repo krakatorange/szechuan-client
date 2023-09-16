@@ -14,7 +14,7 @@ function EventNotification({ event }) {
       setTimeRemaining(distance);
 
       if (!alertShown && new Date() > eventTime) {
-        alert(`Event "${eventName}" is happening now!`);
+        console.log(`Event "${eventName}" is happening now!`);
         setAlertShown(true);
       }
     }, 1000);
