@@ -8,6 +8,7 @@ function CustomNavbar() {
   const [showDrawer, setShowDrawer] = useState(false);
   const navigate = useNavigate();
   const { user, logOut } = useUserAuth();
+  const userId = user?.uid;
 
   const toggleDrawer = () => {
     setShowDrawer(!showDrawer);
@@ -19,6 +20,12 @@ function CustomNavbar() {
     // Example: clearAuthenticationState();
     logOut();
     navigate("/signup");
+  };
+
+  const handleSelfie = () => {
+
+    navigate(`/selfie/${userId}`);
+
   };
 
   const navItemsStyle = {
@@ -56,6 +63,7 @@ function CustomNavbar() {
               <p>Phone: {user.phoneNumber}</p>
             )}
             {/* Display user information here */}
+            <Button onClick={handleSelfie}>Take Selfie</Button>
             <Button onClick={handleLogOut}>Sign Out</Button>
           </div>
           {/* Overlay for closing the drawer */}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Button, Card } from "react-bootstrap";
+import { Container, Button, Card, Modal } from "react-bootstrap";
 import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import { useNavigate } from "react-router-dom";
+import QRCode from "qrcode.react"; // Import QRCode
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -18,10 +19,16 @@ function UploadFile() {
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const [galleryURL, setGalleryURL] = useState("");
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
+  };
+  
+  const toggleQRModal = () => {
+    setShowQRModal(!showQRModal);
   };
 
   const handleUploadButtonClick = () => {
@@ -38,11 +45,15 @@ function UploadFile() {
 
       // Send a POST request to the server to upload files
       axios
-        .post(`${process.env.REACT_APP_API}/events/${eventId}/upload`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
+        .post(
+          `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        )
         .then(() => {
           alert("Files uploaded successfully.");
           setSelectedFiles([]); // Clear the selected files
@@ -74,9 +85,18 @@ function UploadFile() {
         setLoading(false);
       })
       .catch((error) => {
-        console.error('Error fetching matched images:', error);
+        console.error("Error fetching matched images:", error);
         setLoading(false);
       });
+  };
+
+  const handleInviteButtonClick = () => {
+    // Generate the gallery URL
+    const galleryURL = `${window.location.origin}/uploadfile/${eventId}`;
+
+    // Set the gallery URL in state and show the QR code
+    setGalleryURL(galleryURL);
+    toggleQRModal();
   };
 
   useEffect(() => {
@@ -101,7 +121,7 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error fetching gallery images: ", error);
       });
-      axios
+    axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
         userId: userId,
         eventId: eventId,
@@ -113,7 +133,18 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error detecting face:", error);
       });
-
+    // Send a request to grant access based on the "access" query parameter
+    axios
+      .post(`${process.env.REACT_APP_API}/events/access/${eventId}`, {
+          userId: userId,
+      })
+      .then(() => {
+        // Access granted successfully
+        console.log("Access_Granted")
+      })
+      .catch((error) => {
+        console.error("Error granting access:", error);
+      });
   }, [eventId, userId]);
 
   return (
@@ -154,9 +185,25 @@ function UploadFile() {
             >
               Personal Gallery
             </button>
+            <button onClick={handleInviteButtonClick}>Invite</button>
           </Card.Body>
         </Card>
       )}
+       {/* QR Code Modal */}
+       <Modal show={showQRModal} onHide={toggleQRModal}>
+        <Modal.Header closeButton>
+          <Modal.Title>QR Code</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="text-center">
+          {/* Display the QR code */}
+          <QRCode value={galleryURL} size={200} />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={toggleQRModal}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <div className="d-flex justify-content-end mt-3">
         <Button
           variant="primary"
@@ -175,27 +222,25 @@ function UploadFile() {
         />
       </div>
       <div className="gallery mt-4">
-        {showAllPhotos ? (
-          galleryImages.map((item, index) => (
-            <div key={index} className="gallery-item">
-              <img
-                src={item.imageUrl}
-                alt={`Uploaded ${index}`}
-                className="gallery-img"
-              />
-            </div>
-          ))
-        ) : (
-          matchedImages.map((item, index) => (
-            <div key={index} className="gallery-item">
-              <img
-                src={item.matchedImageUrl}
-                alt={`Matched ${index}`}
-                className="gallery-img"
-              />
-            </div>
-          ))
-        )}
+        {showAllPhotos
+          ? galleryImages.map((item, index) => (
+              <div key={index} className="gallery-item">
+                <img
+                  src={item.imageUrl}
+                  alt={`Uploaded ${index}`}
+                  className="gallery-img"
+                />
+              </div>
+            ))
+          : matchedImages.map((item, index) => (
+              <div key={index} className="gallery-item">
+                <img
+                  src={item.matchedImageUrl}
+                  alt={`Matched ${index}`}
+                  className="gallery-img"
+                />
+              </div>
+            ))}
       </div>
       <style>
         {`
