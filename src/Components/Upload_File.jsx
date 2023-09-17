@@ -35,31 +35,45 @@ function UploadFile() {
   const handleUploadButtonClick = () => {
     // Check if any files are selected
     if (selectedFiles.length === 0) {
-      // Open the file dialog for regular file uploads
+      // Open the file dialog for multiple file uploads
       fileInputRef.current.click();
     } else {
-      // Create a FormData object to send files to the server
-      const formData = new FormData();
-      selectedFiles.forEach((file) => {
-        formData.append(`galleryImage`, file);
-      });
-
-      // Send a POST request to the server to upload files
-      axios
-        .post(
-          `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-          formData,
-          {
-            headers: {
-              "Content-Type": "multipart/form-data",
-            },
-          }
-        )
-        .then(() => {
-          alert("Files uploaded successfully.");
-          setSelectedFiles([]); // Clear the selected files
-
+      // Upload files one by one
+      const uploadNextFile = (index) => {
+        if (index < selectedFiles.length) {
+          const file = selectedFiles[index];
+  
+          // Create a FormData object to send the file to the server
+          const formData = new FormData();
+          formData.append("galleryImage", file);
+  
+          // Send a POST request to upload the file
           axios
+            .post(
+              `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+              formData,
+              {
+                headers: {
+                  "Content-Type": "multipart/form-data",
+                },
+              }
+            )
+            .then(() => {
+              // File uploaded successfully
+              if (index === selectedFiles.length - 1) {
+                // All files uploaded, clear the selected files
+                setSelectedFiles([]);
+                alert("All files uploaded successfully.");
+              }
+  
+              // Upload the next file
+              uploadNextFile(index + 1);
+            })
+            .catch((error) => {
+              console.error("Error uploading files:", error);
+              alert("An error occurred while uploading files.");
+            });
+            axios
             .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
             .then((response) => {
               setGalleryImages(response.data);
@@ -67,13 +81,14 @@ function UploadFile() {
             .catch((error) => {
               console.error("Error fetching gallery images: ", error);
             });
-        })
-        .catch((error) => {
-          console.error("Error uploading files:", error);
-          alert("An error occurred while uploading files.");
-        });
+        }
+      };
+  
+      // Start uploading files from the first file in the array
+      uploadNextFile(0);
     }
   };
+  
 
   const fetchMatchedImages = () => {
     const apiUrl = `${process.env.REACT_APP_API}/events/matched/${userId}/${eventId}`;

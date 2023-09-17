@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Container, Card } from 'react-bootstrap';
 import CustomNavbar from './CustomNavbar';
 import NotificationBox from './NotificationBox';
-//import GalleryLink from './galleryUrl';
 import axios from 'axios';
 import { useUserAuth } from "../UserContextProvider";
 
