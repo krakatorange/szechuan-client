@@ -20,6 +20,7 @@ function UploadFile() {
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
   const [galleryURL, setGalleryURL] = useState("");
+  const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
 
@@ -27,9 +28,15 @@ function UploadFile() {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
   };
-  
+
   const toggleQRModal = () => {
     setShowQRModal(!showQRModal);
+  };
+
+  const copyGalleryURL = () => {
+    navigator.clipboard.writeText(galleryURL).then(() => {
+      setIsURLCopied(true);
+    });
   };
 
   const handleUploadButtonClick = () => {
@@ -42,11 +49,11 @@ function UploadFile() {
       const uploadNextFile = (index) => {
         if (index < selectedFiles.length) {
           const file = selectedFiles[index];
-  
+
           // Create a FormData object to send the file to the server
           const formData = new FormData();
           formData.append("galleryImage", file);
-  
+
           // Send a POST request to upload the file
           axios
             .post(
@@ -65,7 +72,7 @@ function UploadFile() {
                 setSelectedFiles([]);
                 alert("All files uploaded successfully.");
               }
-  
+
               // Upload the next file
               uploadNextFile(index + 1);
             })
@@ -73,7 +80,7 @@ function UploadFile() {
               console.error("Error uploading files:", error);
               alert("An error occurred while uploading files.");
             });
-            axios
+          axios
             .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
             .then((response) => {
               setGalleryImages(response.data);
@@ -83,12 +90,11 @@ function UploadFile() {
             });
         }
       };
-  
+
       // Start uploading files from the first file in the array
       uploadNextFile(0);
     }
   };
-  
 
   const fetchMatchedImages = () => {
     const apiUrl = `${process.env.REACT_APP_API}/events/matched/${userId}/${eventId}`;
@@ -112,6 +118,7 @@ function UploadFile() {
 
     // Set the gallery URL in state and show the QR code
     setGalleryURL(galleryURL);
+    setIsURLCopied(false);
     toggleQRModal();
   };
 
@@ -152,12 +159,12 @@ function UploadFile() {
     // Send a request to grant access based on the "access" query parameter
     axios
       .post(`${process.env.REACT_APP_API}/events/access/${eventId}`, {
-          userId: userId,
-          galleryUrl: galleryUrl,
+        userId: userId,
+        galleryUrl: galleryUrl,
       })
       .then(() => {
         // Access granted successfully
-        console.log("Access_Granted")
+        console.log("Access_Granted");
       })
       .catch((error) => {
         console.error("Error granting access:", error);
@@ -206,15 +213,28 @@ function UploadFile() {
           </Card.Body>
         </Card>
       )}
-       {/* QR Code Modal */}
-       <Modal show={showQRModal} onHide={toggleQRModal}>
+      {/* QR Code Modal */}
+      <Modal show={showQRModal} onHide={toggleQRModal}>
         <Modal.Header closeButton>
           <Modal.Title>QR Code</Modal.Title>
         </Modal.Header>
         <Modal.Body className="text-center">
           {/* Display the QR code */}
           <QRCode value={galleryURL} size={200} />
+
+          {/* Display the gallery URL */}
+          <p>Gallery URL: {galleryURL}</p>
+
+          {/* Copy button */}
+          <Button
+            variant="primary"
+            onClick={copyGalleryURL}
+            disabled={isURLCopied}
+          >
+            {isURLCopied ? "URL Copied!" : "Copy URL"}
+          </Button>
         </Modal.Body>
+
         <Modal.Footer>
           <Button variant="secondary" onClick={toggleQRModal}>
             Close
