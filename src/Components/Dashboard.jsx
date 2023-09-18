@@ -8,7 +8,7 @@ import { useUserAuth } from "../UserContextProvider";
 function Dashboard() {
   const [events, setEvents] = useState([]); // Use 'events' instead of 'eventInfo'
   const { user } = useUserAuth();
-  const userId = user?.uid
+  const userId = user?.uid;
 
   useEffect(() => {
     // Fetch event information from the server
