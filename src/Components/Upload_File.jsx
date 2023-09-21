@@ -5,6 +5,7 @@ import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import { useNavigate } from "react-router-dom";
+import DirectoryPoller from "./DirectoryPoller";
 import QRCode from "qrcode.react"; // Import QRCode
 
 function UploadFile() {
@@ -22,11 +23,16 @@ function UploadFile() {
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
+  };
+
+  const toggleDirectoryPoller = () => {
+    setShowDirectoryPoller(!showDirectoryPoller);
   };
 
   const toggleQRModal = () => {
@@ -249,6 +255,26 @@ function UploadFile() {
         >
           Upload Image
         </Button>
+        <Button
+          variant="primary"
+          onClick={toggleDirectoryPoller}
+          style={{ marginLeft: "10px", borderRadius: "20px" }}
+        >
+          Directory Polling
+        </Button>
+        <Modal
+          show={showDirectoryPoller}
+          onHide={toggleDirectoryPoller}
+          size="lg"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Directory Polling</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {/* Conditionally render DirectoryPoller when the modal is visible */}
+            {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
+          </Modal.Body>
+        </Modal>
         <input
           ref={fileInputRef}
           type="file"
