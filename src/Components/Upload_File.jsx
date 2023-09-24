@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Button, Card, Modal } from "react-bootstrap";
+import { Container, Button, Card, Modal, Toast } from "react-bootstrap";
 import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -24,6 +24,11 @@ function UploadFile() {
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
+  const [uploadingStatus, setUploadingStatus] = useState({
+    uploading: false,
+    success: false,
+    error: null,
+  });
   const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
 
   const handleFileInputChange = (event) => {
@@ -46,21 +51,28 @@ function UploadFile() {
   };
 
   const handleUploadButtonClick = () => {
-    // Check if any files are selected
+    const YOUR_MAX_SIZE = 5 * 1024 * 1024;
     if (selectedFiles.length === 0) {
-      // Open the file dialog for multiple file uploads
       fileInputRef.current.click();
     } else {
-      // Upload files one by one
+      // Start the loading bar when uploading begins
+      setUploadingStatus({ uploading: true, success: false, error: null });
+
       const uploadNextFile = (index) => {
         if (index < selectedFiles.length) {
           const file = selectedFiles[index];
-
-          // Create a FormData object to send the file to the server
+          if (file.size > YOUR_MAX_SIZE) {
+            // define YOUR_MAX_SIZE in bytes
+            setUploadingStatus({
+              uploading: false,
+              success: false,
+              error: "The image size is too big",
+            });
+            return;
+          }
           const formData = new FormData();
           formData.append("galleryImage", file);
 
-          // Send a POST request to upload the file
           axios
             .post(
               `${process.env.REACT_APP_API}/events/${eventId}/upload`,
@@ -72,19 +84,25 @@ function UploadFile() {
               }
             )
             .then(() => {
-              // File uploaded successfully
               if (index === selectedFiles.length - 1) {
-                // All files uploaded, clear the selected files
                 setSelectedFiles([]);
-                alert("All files uploaded successfully.");
+                // Display success message
+                setUploadingStatus({
+                  uploading: false,
+                  success: true,
+                  error: null,
+                });
               }
-
-              // Upload the next file
               uploadNextFile(index + 1);
             })
             .catch((error) => {
               console.error("Error uploading files:", error);
-              alert("An error occurred while uploading files.");
+              // Display error message
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: "An error occurred while uploading files.",
+              });
             });
           axios
             .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
@@ -96,8 +114,6 @@ function UploadFile() {
             });
         }
       };
-
-      // Start uploading files from the first file in the array
       uploadNextFile(0);
     }
   };
@@ -255,6 +271,38 @@ function UploadFile() {
         >
           Upload Image
         </Button>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            right: "20px",
+            zIndex: 1000,
+          }}
+        >
+          <Toast
+            show={
+              uploadingStatus.uploading ||
+              uploadingStatus.success ||
+              uploadingStatus.error
+            }
+            onClose={() =>
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: null,
+              })
+            }
+            delay={3000}
+            autohide
+          >
+            <Toast.Body>
+              {uploadingStatus.uploading && "Uploading..."}
+              {uploadingStatus.success && "Upload successful!"}
+              {uploadingStatus.error && uploadingStatus.error}
+            </Toast.Body>
+          </Toast>
+        </div>
+
         <Button
           variant="primary"
           onClick={toggleDirectoryPoller}
