@@ -1,108 +1,65 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from "react";
 import axios from "axios";
 
-function DirectoryPoller({ eventId }) {
-  const [dirHandle, setDirHandle] = useState(null);
-  const [fileList, setFileList] = useState([]);
-  const [changes, setChanges] = useState({ added: [], removed: [] });
+function MonitorImages() {
+  const [url, setUrl] = useState("");
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const isIPhone = /iPhone/.test(navigator.userAgent);
-  const isDesktop = !/Mobi|Android/.test(navigator.userAgent);
-
-  const readDirectory = async (handle) => {
-    const files = [];
-    for await (const entry of handle.values()) {
-      files.push(entry.name);
-    }
-    return files;
-  };
-
-  const checkForChanges = (prevFiles, currentFiles) => {
-    return {
-      added: currentFiles.filter(file => !prevFiles.includes(file)),
-      removed: prevFiles.filter(file => !currentFiles.includes(file))
-    };
-  };
-
-  useEffect(() => {
-    const pollDirectory = async () => {
-      if (dirHandle) {
-        const currentFiles = await readDirectory(dirHandle);
-        const detectedChanges = checkForChanges(fileList, currentFiles);
-
-        if (detectedChanges.added.length || detectedChanges.removed.length) {
-          setChanges(detectedChanges);
-
-          // Upload added files to the server
-          detectedChanges.added.forEach(async (addedFile) => {
-            const formData = new FormData();
-            formData.append("galleryImage", addedFile);
-
-            console.log("File to upload:", addedFile); 
-          
-            try {
-              await axios.post(
-                `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-                formData,
-                {
-                  headers: {
-                    "Content-Type": "multipart/form-data",
-                  },
-                }
-              );
-              // Handle successful response here
-            } catch (error) {
-              console.error("File upload failed for file:", addedFile.name);
-              // Handle error here
-            }
-          });
-        }
-
-        setFileList(currentFiles);
-      }
-    };
-
-    const interval = setInterval(pollDirectory, 1000);
-    return () => clearInterval(interval);
-  }, [dirHandle, fileList]);
-
-  const selectDirectory = async () => {
+  const monitorImages = async () => {
+    setLoading(true);
     try {
-      let handle;
-      console.log("desktop: " + isDesktop)
-      console.log("iphone: " + isIPhone)
-      const windowProperties = Object.getOwnPropertyNames(window).sort();
-      console.log(windowProperties);
-      if (isDesktop) {
-        handle = await window.showDirectoryPicker();
-      }
-      else if (isIPhone) {
-        handle = await navigator.storage.getDirectory();
+      const response = await axios.get(
+        `${process.env.REACT_APP_API}/events/fetch-external-resource`,
+        {
+          params: {
+            externalResourceUrl: url,
+          },
+        }
+      );
+
+      const data = response.data;
+      console.log("Received data:", data);
+      if (data.image_urls && Array.isArray(data.image_urls)) {
+        setImages(data.image_urls);
       } else {
-        throw new Error("Unsupported device.");
+        console.error("Unexpected response format");
       }
-      setDirHandle(handle);
-    } catch (error) {
-      console.error("Directory selection failed:", error);
+    } catch (err) {
+      console.error("Failed to fetch images:", err);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const extractImageName = (url) => {
+    return url.split("/").pop().split("?")[0];
   };
 
   return (
-    <div className="container">
-      <button onClick={selectDirectory}>Select Directory</button>
-      <div>
-        <h3>Current Directory Contents</h3>
-        <ul>
-          {fileList.map(file => <li key={file}>{file}</li>)}
-        </ul>
-      </div>
-      <div className="detected-changes">
-        <h3>Detected Changes</h3>
-        <p>Added: {changes.added.join(', ')}</p>
-        <p>Removed: {changes.removed.join(', ')}</p>
-      </div>
+    <div>
+      <input
+        type="text"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="Enter URL to monitor"
+      />
+      <button onClick={monitorImages} disabled={loading}>
+        Monitor
+      </button>
+
+      {loading && <p>Loading...</p>}
+
+      <ul>
+        {images.map((imageSrc, index) => (
+          <li key={index} style={{ margin: "10px" }}>
+            <img src={imageSrc} alt={`Fetched Image ${index + 1}`} style={{ width: "100px" }} />
+            <p>{extractImageName(imageSrc)}</p>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-export default DirectoryPoller;
+export default MonitorImages;
