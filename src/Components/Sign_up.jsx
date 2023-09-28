@@ -64,7 +64,7 @@ function SignUp() {
           // If the user exists, navigate to /dashboard
           navigate("/dashboard");
         }
-      }, 2000);
+      }, 4000);
     } catch (err) {
       setIsLoading(false);
       setError(err.message);

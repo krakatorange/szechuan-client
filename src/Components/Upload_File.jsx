@@ -29,7 +29,7 @@ function UploadFile() {
     success: false,
     error: null,
   });
-  const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
+  const galleryUrl = `${window.location.origin}/event/${eventId}`;
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
@@ -136,7 +136,7 @@ function UploadFile() {
 
   const handleInviteButtonClick = () => {
     // Generate the gallery URL
-    const galleryURL = `${window.location.origin}/uploadfile/${eventId}`;
+    const galleryURL = `${window.location.origin}/event/${eventId}`;
 
     // Set the gallery URL in state and show the QR code
     setGalleryURL(galleryURL);
@@ -245,7 +245,7 @@ function UploadFile() {
           <QRCode value={galleryURL} size={200} />
 
           {/* Display the gallery URL */}
-          <p>Gallery URL: {galleryURL}</p>
+          <p>Event URL: {galleryURL}</p>
 
           {/* Copy button */}
           <Button

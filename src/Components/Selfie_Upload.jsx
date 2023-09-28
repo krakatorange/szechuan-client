@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Button, Card } from "react-bootstrap";
+import { Container, Button, Toast } from "react-bootstrap";
 import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -13,6 +13,11 @@ function Selfie_Upload() {
   const {user} = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const [uploadingStatus, setUploadingStatus] = useState({
+    uploading: false,
+    success: false,
+    error: null,
+  });
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
@@ -25,6 +30,7 @@ function Selfie_Upload() {
       // Open the file dialog for regular file uploads
       fileInputRef.current.click();
     } else {
+      setUploadingStatus({ uploading: true, success: false, error: null });
       // Create a FormData object to send files to the server
       const formData = new FormData();
       selectedFiles.forEach((file) => {
@@ -39,8 +45,12 @@ function Selfie_Upload() {
         })
         .then(() => {
           console.log("Upload successful"); // Add this line
-          alert("Files uploaded successfully.");
           setSelectedFiles([]); // Clear the selected files
+          setUploadingStatus({
+            uploading: false,
+            success: true,
+            error: null,
+          });
           console.log("Selected files cleared"); // Add this line
 
           axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
@@ -49,6 +59,11 @@ function Selfie_Upload() {
             })
             .catch((error) => {
               console.error("Error fetching gallery images: ", error);
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: "An error occurred while uploading files.",
+              });
             });
         })
         .catch((error) => {
@@ -79,6 +94,37 @@ function Selfie_Upload() {
         >
           Upload Image
         </Button>
+        <div
+          style={{
+            position: "absolute",
+            bottom: "20px",
+            right: "20px",
+            zIndex: 1000,
+          }}
+        >
+          <Toast
+            show={
+              uploadingStatus.uploading ||
+              uploadingStatus.success ||
+              uploadingStatus.error
+            }
+            onClose={() =>
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: null,
+              })
+            }
+            delay={3000}
+            autohide
+          >
+            <Toast.Body>
+              {uploadingStatus.uploading && "Uploading..."}
+              {uploadingStatus.success && "Upload successful!"}
+              {uploadingStatus.error && uploadingStatus.error}
+            </Toast.Body>
+          </Toast>
+        </div>
         <input
           ref={fileInputRef}
           type="file"

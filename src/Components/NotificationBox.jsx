@@ -35,7 +35,7 @@ function EventNotification({ event }) {
           <p className="card-text">Event Date/Time: {formattedEventDateTime}</p>
           <p className="card-text">Location: {eventLocation}</p>
           <p className="card-text">Time remaining: {timeRemaining}</p>
-          <Link to={`/uploadfile/${id}`} className="btn btn-primary">Go to Gallery</Link>
+          <Link to={`/event/${id}`} className="btn btn-primary">Go to Gallery</Link>
         </div>
       </div>
     </div>
