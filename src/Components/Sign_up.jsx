@@ -122,7 +122,7 @@ function SignUp() {
               >
                 We will send you a verification code
               </div>
-              {!isVerified && <div id="recaptcha-container" />}
+              <div id="recaptcha-container" style={{ display: isVerified ? 'none' : 'block' }} />
               {!isValidNumber && (
                 <div className="text-danger" style={{ fontSize: "0.875rem" }}>
                   Invalid phone number
