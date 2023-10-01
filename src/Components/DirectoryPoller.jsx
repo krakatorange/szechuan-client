@@ -44,6 +44,9 @@ function MonitorImages({ eventId }) {
     setIsUploading(true);
 
     uploadInterval.current = setInterval(async () => {
+      // Check for new images
+      await monitorImages();
+
       for (const imageSrc of newImages) {
         if (!uploadedImages.includes(imageSrc)) {
           try {
@@ -112,6 +115,7 @@ function MonitorImages({ eventId }) {
       </button>
 
       {loading && <p>Loading...</p>}
+      {isUploading && newImages.length === 0 && <p>Waiting for new images...</p>}
 
       <ul>
         {images.map((imageSrc, index) => (

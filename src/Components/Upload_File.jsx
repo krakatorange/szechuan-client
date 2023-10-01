@@ -28,7 +28,9 @@ function UploadFile() {
     uploading: false,
     success: false,
     error: null,
+    exists: false,
   });
+
   const galleryUrl = `${window.location.origin}/event/${eventId}`;
 
   const handleFileInputChange = (event) => {
@@ -97,12 +99,23 @@ function UploadFile() {
             })
             .catch((error) => {
               console.error("Error uploading files:", error);
-              // Display error message
-              setUploadingStatus({
-                uploading: false,
-                success: false,
-                error: "An error occurred while uploading files.",
-              });
+              if (error.message === "Image already exists in the gallery.") {
+                setUploadingStatus({
+                  uploading: false,
+                  success: false,
+                  error: null,
+                  exists: true,
+                });
+              } else {
+                setUploadingStatus({
+                  uploading: false,
+                  success: false,
+                  error: "Image Already exists.",
+                  exists: false,
+                });
+              }
+              fileInputRef.current.value = "";
+              setSelectedFiles([]);
             });
           axios
             .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
@@ -283,13 +296,15 @@ function UploadFile() {
             show={
               uploadingStatus.uploading ||
               uploadingStatus.success ||
-              uploadingStatus.error
+              uploadingStatus.error ||
+              uploadingStatus.exists
             }
             onClose={() =>
               setUploadingStatus({
                 uploading: false,
                 success: false,
                 error: null,
+                exists: false,
               })
             }
             delay={3000}
@@ -299,6 +314,7 @@ function UploadFile() {
               {uploadingStatus.uploading && "Uploading..."}
               {uploadingStatus.success && "Upload successful!"}
               {uploadingStatus.error && uploadingStatus.error}
+              {uploadingStatus.exists && "Image already exists in the gallery."}
             </Toast.Body>
           </Toast>
         </div>
