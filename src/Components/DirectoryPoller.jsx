@@ -25,9 +25,11 @@ function MonitorImages({ eventId }) {
 
       const data = response.data;
       if (data.image_urls && Array.isArray(data.image_urls)) {
-        const newDetectedImages = data.image_urls.filter(img => !images.includes(img) && !uploadedImages.includes(img));
-        setNewImages(prevImages => [...prevImages, ...newDetectedImages]);
-        setImages(prevImages => [...prevImages, ...newDetectedImages]);
+        const newDetectedImages = data.image_urls.filter(
+          (img) => !images.includes(img) && !uploadedImages.includes(img)
+        );
+        setNewImages((prevImages) => [...prevImages, ...newDetectedImages]);
+        setImages((prevImages) => [...prevImages, ...newDetectedImages]);
       } else {
         console.error("Unexpected response format");
       }
@@ -45,14 +47,17 @@ function MonitorImages({ eventId }) {
       for (const imageSrc of newImages) {
         if (!uploadedImages.includes(imageSrc)) {
           try {
-            const response = await axios.get(`${process.env.REACT_APP_API}/events/fetch-image`, {
-              params: {
-                imageUrl: imageSrc
-              },
-              responseType: 'arraybuffer'
-            });
+            const response = await axios.get(
+              `${process.env.REACT_APP_API}/events/fetch-image`,
+              {
+                params: {
+                  imageUrl: imageSrc,
+                },
+                responseType: "arraybuffer",
+              }
+            );
 
-            const blob = new Blob([response.data], { type: 'image/jpeg' });
+            const blob = new Blob([response.data], { type: "image/jpeg" });
 
             const formData = new FormData();
             const imageName = imageSrc.split("/").pop().split("?")[0];
@@ -70,8 +75,10 @@ function MonitorImages({ eventId }) {
 
             console.log(`Image ${imageName} uploaded successfully!`);
 
-            setUploadedImages(prevImages => [...prevImages, imageSrc]);
-            setNewImages(prevNewImages => prevNewImages.filter(img => img !== imageSrc));
+            setUploadedImages((prevImages) => [...prevImages, imageSrc]);
+            setNewImages((prevNewImages) =>
+              prevNewImages.filter((img) => img !== imageSrc)
+            );
           } catch (error) {
             console.error("Error uploading image:", error);
           }
