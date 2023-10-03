@@ -6,6 +6,7 @@ import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
+import io from "socket.io-client"; 
 import QRCode from "qrcode.react"; // Import QRCode
 
 function UploadFile() {
@@ -20,6 +21,7 @@ function UploadFile() {
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -158,6 +160,7 @@ function UploadFile() {
   };
 
   useEffect(() => {
+    socketRef.current = io.connect(process.env.REACT_APP_API);
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
@@ -171,13 +174,24 @@ function UploadFile() {
         console.error("Error fetching event data: ", error);
       });
 
-    axios
+      socketRef.current.on('new-image', (data) => {
+        // When a new image is uploaded, fetch the gallery images again
+        axios
+          .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+          .then((response) => {
+            setGalleryImages(response.data);
+          })
+          .catch((error) => {
+            console.error("Error fetching gallery images: ", error);
+          });
+      });
+      axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
-        setGalleryImages(response.data);
+          setGalleryImages(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching gallery images: ", error);
+          console.error("Error fetching gallery images: ", error);
       });
     axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
@@ -204,6 +218,11 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error granting access:", error);
       });
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+      };
   }, [eventId, userId]);
 
   return (

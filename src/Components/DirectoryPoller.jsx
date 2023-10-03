@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import io from "socket.io-client";
 
 function MonitorImages({ eventId }) {
   const [url, setUrl] = useState("");
@@ -8,7 +9,7 @@ function MonitorImages({ eventId }) {
   const [loading, setLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showTick, setShowTick] = useState(false);  // New state for showing the tick
-
+  const socketRef = useRef(null);
   const uploadInterval = useRef(null);
 
   const monitorImages = async () => {
@@ -101,6 +102,26 @@ function MonitorImages({ eventId }) {
     setIsUploading(false);
     clearInterval(uploadInterval.current);
   };
+
+  useEffect(() => {
+    // Establish the socket connection
+    socketRef.current = io(process.env.REACT_APP_API);
+
+    // Set up the event listener for 'new-image'
+    socketRef.current.on('new-image', (data) => {
+        // Handle the new image data as needed
+        console.log("New image:", data.imageUrl);
+        // You can add the new image URL to your state if needed
+        // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
+    });
+
+    // Clean up the socket connection when the component is unmounted
+    return () => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
+        }
+    };
+  }, []);
 
   useEffect(() => {
     if (isUploading) {
