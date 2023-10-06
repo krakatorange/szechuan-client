@@ -25,6 +25,7 @@ function UploadFile() {
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [isPollerMinimized, setIsPollerMinimized] = useState(false);
   const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState({
     uploading: false,
@@ -38,6 +39,10 @@ function UploadFile() {
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
+  };
+
+  const handleMinimizeClick = () => {
+    setIsPollerMinimized(!isPollerMinimized);
   };
 
   const toggleDirectoryPoller = () => {
@@ -345,19 +350,20 @@ function UploadFile() {
         >
           Directory Polling
         </Button>
-        <Modal
-          show={showDirectoryPoller}
-          onHide={toggleDirectoryPoller}
-          size="lg"
+        <div
+        className={`directory-poller-container ${showDirectoryPoller ? "active" : ""} ${isPollerMinimized ? "minimized" : ""}`}
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Directory Polling</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {/* Conditionally render DirectoryPoller when the modal is visible */}
-            {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
-          </Modal.Body>
-        </Modal>
+        <div className="directory-poller-header">
+          <h5>Directory Polling</h5>
+          <button onClick={handleMinimizeClick}>
+            {isPollerMinimized ? "Maximize" : "Minimize"}
+          </button>
+          <button onClick={toggleDirectoryPoller}>Close</button>
+        </div>
+        <div className="directory-poller-content">
+          {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
+        </div>
+      </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -421,6 +427,46 @@ function UploadFile() {
 
           .gallery-item:hover .gallery-img {
             transform: scale(1.05);
+          }
+
+          .directory-poller-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 300px;
+            z-index: 1000;
+            max-height: 70vh;
+            overflow-y: auto;
+            display: none; /* Default to not display */
+            transform: translateY(100%);
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px 10px 0 0;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+          }
+
+          .directory-poller-container.active {
+            display: block; /* Display when active */
+            transform: translateY(0); /* Bring into view when active */
+        }
+
+          .directory-poller-container.minimized {
+            transform: translateY(calc(100% - 40px));
+          }
+
+          .directory-poller-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+          }
+
+          .directory-poller-content {
+            padding: 10px;
           }
         `}
       </style>
