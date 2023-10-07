@@ -3,7 +3,7 @@ import {
   RecaptchaVerifier,
   signInWithPhoneNumber,
   onAuthStateChanged,
-  signOut
+  signOut,
 } from "firebase/auth";
 import { auth } from "./firebase";
 
@@ -13,20 +13,19 @@ export function useUserAuth() {
   return useContext(UserAuthContext);
 }
 
-export function UserAuthContextProvider({children}) {
+export function UserAuthContextProvider({ children }) {
   const [user, setUser] = useState(null); // Store user information
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if(currentUser){
+      if (currentUser) {
         // console.log("Auth", currentUser);
-        localStorage.setItem("currentUser", JSON.stringify(currentUser))
+        localStorage.setItem("currentUser", JSON.stringify(currentUser));
         setUser(currentUser);
-      }
-      else {
+      } else {
         // when the user is signed out
         // console.log('user logged out')
-        localStorage.removeItem('currentUser')
+        localStorage.removeItem("currentUser");
       }
     });
 
@@ -36,15 +35,20 @@ export function UserAuthContextProvider({children}) {
   }, []);
 
   function recaptchaVerify(phone) {
-    const recaptchaVerifier = new RecaptchaVerifier(
-      auth,
-      "recaptcha-container",
-      {}
-    );
-    recaptchaVerifier.render();
+    try {
+      const recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {}
+      );
+      recaptchaVerifier.render();
 
-    // Perform phone number verification
-    return signInWithPhoneNumber(auth, phone, recaptchaVerifier)
+      // Perform phone number verification
+      return signInWithPhoneNumber(auth, phone, recaptchaVerifier);
+    } catch (error) {
+      console.error("Error in recaptchaVerify:", error);
+      throw error; // Propagate the error so you can handle it in the calling code
+    }
   }
 
   function verifyCode(verificationCode) {
@@ -58,8 +62,8 @@ export function UserAuthContextProvider({children}) {
   function logOut() {
     try {
       // Implement your sign-out logic using Firebase's signOut
-        localStorage.removeItem("currentUser")
-        return signOut(auth);
+      localStorage.removeItem("currentUser");
+      return signOut(auth);
     } catch (error) {
       console.error("Error signing out:", error);
     }

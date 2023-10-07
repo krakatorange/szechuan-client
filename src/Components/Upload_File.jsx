@@ -6,6 +6,7 @@ import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
+import io from "socket.io-client"; 
 import QRCode from "qrcode.react"; // Import QRCode
 
 function UploadFile() {
@@ -20,20 +21,28 @@ function UploadFile() {
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+  const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const [isPollerMinimized, setIsPollerMinimized] = useState(false);
   const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState({
     uploading: false,
     success: false,
     error: null,
+    exists: false,
   });
-  const galleryUrl = `${window.location.origin}/uploadfile/${eventId}`;
+
+  const galleryUrl = `${window.location.origin}/event/${eventId}`;
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
+  };
+
+  const handleMinimizeClick = () => {
+    setIsPollerMinimized(!isPollerMinimized);
   };
 
   const toggleDirectoryPoller = () => {
@@ -97,12 +106,23 @@ function UploadFile() {
             })
             .catch((error) => {
               console.error("Error uploading files:", error);
-              // Display error message
-              setUploadingStatus({
-                uploading: false,
-                success: false,
-                error: "An error occurred while uploading files.",
-              });
+              if (error.message === "Image already exists in the gallery.") {
+                setUploadingStatus({
+                  uploading: false,
+                  success: false,
+                  error: null,
+                  exists: true,
+                });
+              } else {
+                setUploadingStatus({
+                  uploading: false,
+                  success: false,
+                  error: "Image Already exists.",
+                  exists: false,
+                });
+              }
+              fileInputRef.current.value = "";
+              setSelectedFiles([]);
             });
           axios
             .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
@@ -136,7 +156,7 @@ function UploadFile() {
 
   const handleInviteButtonClick = () => {
     // Generate the gallery URL
-    const galleryURL = `${window.location.origin}/uploadfile/${eventId}`;
+    const galleryURL = `${window.location.origin}/event/${eventId}`;
 
     // Set the gallery URL in state and show the QR code
     setGalleryURL(galleryURL);
@@ -145,6 +165,7 @@ function UploadFile() {
   };
 
   useEffect(() => {
+    socketRef.current = io.connect(process.env.REACT_APP_API);
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
@@ -158,13 +179,24 @@ function UploadFile() {
         console.error("Error fetching event data: ", error);
       });
 
-    axios
+      socketRef.current.on('new-image', (data) => {
+        // When a new image is uploaded, fetch the gallery images again
+        axios
+          .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+          .then((response) => {
+            setGalleryImages(response.data);
+          })
+          .catch((error) => {
+            console.error("Error fetching gallery images: ", error);
+          });
+      });
+      axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
-        setGalleryImages(response.data);
+          setGalleryImages(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching gallery images: ", error);
+          console.error("Error fetching gallery images: ", error);
       });
     axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
@@ -191,6 +223,11 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error granting access:", error);
       });
+      return () => {
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+        }
+      };
   }, [eventId, userId]);
 
   return (
@@ -245,7 +282,7 @@ function UploadFile() {
           <QRCode value={galleryURL} size={200} />
 
           {/* Display the gallery URL */}
-          <p>Gallery URL: {galleryURL}</p>
+          <p>Event URL: {galleryURL}</p>
 
           {/* Copy button */}
           <Button
@@ -283,13 +320,15 @@ function UploadFile() {
             show={
               uploadingStatus.uploading ||
               uploadingStatus.success ||
-              uploadingStatus.error
+              uploadingStatus.error ||
+              uploadingStatus.exists
             }
             onClose={() =>
               setUploadingStatus({
                 uploading: false,
                 success: false,
                 error: null,
+                exists: false,
               })
             }
             delay={3000}
@@ -299,6 +338,7 @@ function UploadFile() {
               {uploadingStatus.uploading && "Uploading..."}
               {uploadingStatus.success && "Upload successful!"}
               {uploadingStatus.error && uploadingStatus.error}
+              {uploadingStatus.exists && "Image already exists in the gallery."}
             </Toast.Body>
           </Toast>
         </div>
@@ -310,19 +350,20 @@ function UploadFile() {
         >
           Directory Polling
         </Button>
-        <Modal
-          show={showDirectoryPoller}
-          onHide={toggleDirectoryPoller}
-          size="lg"
+        <div
+        className={`directory-poller-container ${showDirectoryPoller ? "active" : ""} ${isPollerMinimized ? "minimized" : ""}`}
         >
-          <Modal.Header closeButton>
-            <Modal.Title>Directory Polling</Modal.Title>
-          </Modal.Header>
-          <Modal.Body>
-            {/* Conditionally render DirectoryPoller when the modal is visible */}
-            {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
-          </Modal.Body>
-        </Modal>
+        <div className="directory-poller-header">
+          <h5>Directory Polling</h5>
+          <button onClick={handleMinimizeClick}>
+            {isPollerMinimized ? "Maximize" : "Minimize"}
+          </button>
+          <button onClick={toggleDirectoryPoller}>Close</button>
+        </div>
+        <div className="directory-poller-content">
+          {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
+        </div>
+      </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -386,6 +427,46 @@ function UploadFile() {
 
           .gallery-item:hover .gallery-img {
             transform: scale(1.05);
+          }
+
+          .directory-poller-container {
+            position: fixed;
+            bottom: 0;
+            right: 0;
+            width: 300px;
+            z-index: 1000;
+            max-height: 70vh;
+            overflow-y: auto;
+            display: none; /* Default to not display */
+            transform: translateY(100%);
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px 10px 0 0;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+          }
+
+          .directory-poller-container.active {
+            display: block; /* Display when active */
+            transform: translateY(0); /* Bring into view when active */
+        }
+
+          .directory-poller-container.minimized {
+            transform: translateY(calc(100% - 40px));
+          }
+
+          .directory-poller-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+          }
+
+          .directory-poller-content {
+            padding: 10px;
           }
         `}
       </style>

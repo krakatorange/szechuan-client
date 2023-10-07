@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import "react-phone-number-input/style.css";
@@ -8,7 +8,6 @@ import { parsePhoneNumberFromString } from "libphonenumber-js";
 import logo from "../Logo/szechuan_chicken.png";
 import text_logo from "../Logo/szechuan_text_logo.png";
 import { useUserAuth } from "../UserContextProvider";
-// import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function SignUp() {
@@ -17,12 +16,28 @@ function SignUp() {
   const [codeSent, setCodeSent] = useState(false);
   const [confirmOTP, setConfirmOTP] = useState({});
   const [verificationCode, setVerificationCode] = useState("");
-  const { recaptchaVerify, user} = useUserAuth();
+  const { recaptchaVerify, user } = useUserAuth();
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const userId = user?.uid;
+
+  useEffect(() => {
+    let timeoutId;
+    if (isLoading) {
+      timeoutId = setTimeout(() => {
+        setIsLoading(false);
+
+        if (confirmOTP.user?.isNewUser) {
+          navigate(`/${userId}/selfie`);
+        } else {
+          navigate("/dashboard");
+        }
+      }, 4000);
+    }
+    return () => clearTimeout(timeoutId);
+  }, [isLoading, confirmOTP.user, userId, navigate]);
 
   const handleSendVerificationCode = async () => {
     setError("");
@@ -35,7 +50,6 @@ function SignUp() {
       return setError("Please enter a Valid Phone Number!");
     try {
       const response = await recaptchaVerify(phone);
-      // console.log("recaptcha response: ", response);
       setConfirmOTP(response);
       setIsVerified(true);
     } catch (err) {
@@ -50,21 +64,7 @@ function SignUp() {
     try {
       setError("");
       setIsLoading(true);
-  
       await confirmOTP.confirm(verificationCode);
-  
-      setTimeout(() => {
-        setIsLoading(false);
-  
-        // Check if the user is new or existing
-        if (confirmOTP.user?.isNewUser) {
-          // If the user is new, navigate to /${userId}/selfie
-          navigate(`/${userId}/selfie`);
-        } else {
-          // If the user exists, navigate to /dashboard
-          navigate("/dashboard");
-        }
-      }, 2000);
     } catch (err) {
       setIsLoading(false);
       setError(err.message);
@@ -122,7 +122,7 @@ function SignUp() {
               >
                 We will send you a verification code
               </div>
-              {!isVerified && <div id="recaptcha-container" />}
+              <div id="recaptcha-container" style={{ display: isVerified ? 'none' : 'block' }} />
               {!isValidNumber && (
                 <div className="text-danger" style={{ fontSize: "0.875rem" }}>
                   Invalid phone number
@@ -145,11 +145,11 @@ function SignUp() {
                   onClick={verifyOtp}
                   style={{
                     backgroundColor: "#007bff",
-                    position: "relative", // Add position relative for the parent container
+                    position: "relative",
                   }}
                 >
                   Verify Code
-                  {isLoading && ( // Display loading overlay if isLoading is true
+                  {isLoading && (
                     <div
                       style={{
                         position: "absolute",
@@ -157,7 +157,7 @@ function SignUp() {
                         left: 0,
                         width: "100%",
                         height: "100%",
-                        backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent white background
+                        backgroundColor: "rgba(255, 255, 255, 0.8)",
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",

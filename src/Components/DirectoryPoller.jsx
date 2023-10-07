@@ -1,108 +1,154 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
+import io from "socket.io-client";
 
-function DirectoryPoller({ eventId }) {
-  const [dirHandle, setDirHandle] = useState(null);
-  const [fileList, setFileList] = useState([]);
-  const [changes, setChanges] = useState({ added: [], removed: [] });
+function MonitorImages({ eventId }) {
+  const [url, setUrl] = useState("");
+  const [newImages, setNewImages] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [showTick, setShowTick] = useState(false);  // New state for showing the tick
+  const socketRef = useRef(null);
+  const uploadInterval = useRef(null);
 
-  const isIPhone = /iPhone/.test(navigator.userAgent);
-  const isDesktop = !/Mobi|Android/.test(navigator.userAgent);
+  const monitorImages = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API}/events/fetch-external-resource`,
+        {
+          params: {
+            externalResourceUrl: url,
+          },
+        }
+      );
 
-  const readDirectory = async (handle) => {
-    const files = [];
-    for await (const entry of handle.values()) {
-      files.push(entry.name);
+      const data = response.data;
+      if (data.image_urls && Array.isArray(data.image_urls)) {
+        setNewImages((prevNewImages) => {
+          const newDetectedImages = data.image_urls.filter(
+            (img) => !prevNewImages.includes(img)
+          );
+          return [...prevNewImages, ...newDetectedImages];
+        });
+      } else {
+        console.error("Unexpected response format");
+      }
+    } catch (err) {
+      console.error("Failed to fetch images:", err);
+    } finally {
+      setLoading(false);
     }
-    return files;
   };
 
-  const checkForChanges = (prevFiles, currentFiles) => {
-    return {
-      added: currentFiles.filter(file => !prevFiles.includes(file)),
-      removed: prevFiles.filter(file => !currentFiles.includes(file))
-    };
+  const uploadImages = async () => {
+    for (const imageSrc of newImages) {
+      if (!uploadedImages.includes(imageSrc)) {
+        try {
+          const response = await axios.get(
+            `${process.env.REACT_APP_API}/events/fetch-image`,
+            {
+              params: {
+                imageUrl: imageSrc,
+              },
+              responseType: "arraybuffer",
+            }
+          );
+
+          const blob = new Blob([response.data], { type: "image/jpeg" });
+
+          const formData = new FormData();
+          const imageName = imageSrc.split("/").pop().split("?")[0];
+          formData.append("galleryImage", blob, imageName);
+
+          await axios.post(
+            `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          console.log(`Image ${imageName} uploaded successfully!`);
+
+          setUploadedImages((prevImages) => [...prevImages, imageSrc]);
+          setNewImages((prevNewImages) =>
+            prevNewImages.filter((img) => img !== imageSrc)
+          );
+
+          // Show the tick when an image is uploaded
+          setShowTick(true);
+          setTimeout(() => setShowTick(false), 2000);  // Hide the tick after 2 seconds
+
+        } catch (error) {
+          console.error("Error uploading image:", error);
+        }
+      }
+    }
+  };
+
+  const startMonitoringAndUploading = () => {
+    setIsUploading(true);
+
+    uploadInterval.current = setInterval(async () => {
+      await monitorImages();
+    }, 5000); // Check every 5 seconds
+  };
+
+  const stopUploading = () => {
+    setIsUploading(false);
+    clearInterval(uploadInterval.current);
   };
 
   useEffect(() => {
-    const pollDirectory = async () => {
-      if (dirHandle) {
-        const currentFiles = await readDirectory(dirHandle);
-        const detectedChanges = checkForChanges(fileList, currentFiles);
+    // Establish the socket connection
+    socketRef.current = io(process.env.REACT_APP_API);
 
-        if (detectedChanges.added.length || detectedChanges.removed.length) {
-          setChanges(detectedChanges);
+    // Set up the event listener for 'new-image'
+    socketRef.current.on('new-image', (data) => {
+        // Handle the new image data as needed
+        console.log("New image:", data.imageUrl);
+        // You can add the new image URL to your state if needed
+        // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
+    });
 
-          // Upload added files to the server
-          detectedChanges.added.forEach(async (addedFile) => {
-            const formData = new FormData();
-            formData.append("galleryImage", addedFile);
-
-            console.log("File to upload:", addedFile); 
-          
-            try {
-              await axios.post(
-                `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-                formData,
-                {
-                  headers: {
-                    "Content-Type": "multipart/form-data",
-                  },
-                }
-              );
-              // Handle successful response here
-            } catch (error) {
-              console.error("File upload failed for file:", addedFile.name);
-              // Handle error here
-            }
-          });
+    // Clean up the socket connection when the component is unmounted
+    return () => {
+        if (socketRef.current) {
+            socketRef.current.disconnect();
         }
-
-        setFileList(currentFiles);
-      }
     };
+  }, []);
 
-    const interval = setInterval(pollDirectory, 1000);
-    return () => clearInterval(interval);
-  }, [dirHandle, fileList]);
-
-  const selectDirectory = async () => {
-    try {
-      let handle;
-      console.log("desktop: " + isDesktop)
-      console.log("iphone: " + isIPhone)
-      const windowProperties = Object.getOwnPropertyNames(window).sort();
-      console.log(windowProperties);
-      if (isDesktop) {
-        handle = await window.showDirectoryPicker();
-      }
-      else if (isIPhone) {
-        handle = await navigator.storage.getDirectory();
-      } else {
-        throw new Error("Unsupported device.");
-      }
-      setDirHandle(handle);
-    } catch (error) {
-      console.error("Directory selection failed:", error);
+  useEffect(() => {
+    if (isUploading) {
+      uploadImages();
     }
-  };
+  }, [newImages]);
 
   return (
-    <div className="container">
-      <button onClick={selectDirectory}>Select Directory</button>
-      <div>
-        <h3>Current Directory Contents</h3>
-        <ul>
-          {fileList.map(file => <li key={file}>{file}</li>)}
-        </ul>
-      </div>
-      <div className="detected-changes">
-        <h3>Detected Changes</h3>
-        <p>Added: {changes.added.join(', ')}</p>
-        <p>Removed: {changes.removed.join(', ')}</p>
-      </div>
+    <div>
+      <input
+        type="text"
+        value={url}
+        onChange={(e) => setUrl(e.target.value)}
+        placeholder="Enter URL to monitor"
+      />
+      <button onClick={startMonitoringAndUploading} disabled={isUploading}>
+        Start
+      </button>
+      <button onClick={stopUploading} disabled={!isUploading}>
+        Stop
+      </button>
+
+      {loading && <p>Loading...</p>}
+      {isUploading && newImages.length === 0 && <p>Waiting for new images...</p>}
+      {showTick && <span>&#10003;</span>}  {/* Display the tick when showTick is true */}
     </div>
   );
 }
 
-export default DirectoryPoller;
+export default MonitorImages;
