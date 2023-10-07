@@ -6,7 +6,7 @@ import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
-import io from "socket.io-client"; 
+import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 
 function UploadFile() {
@@ -27,6 +27,9 @@ function UploadFile() {
   const [showQRModal, setShowQRModal] = useState(false);
   const [isPollerMinimized, setIsPollerMinimized] = useState(false);
   const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
+  const [showImageViewer, setShowImageViewer] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+  const [showMenu, setShowMenu] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState({
     uploading: false,
     success: false,
@@ -57,6 +60,28 @@ function UploadFile() {
     navigator.clipboard.writeText(galleryURL).then(() => {
       setIsURLCopied(true);
     });
+  };
+
+  const handleImageClick = (index) => {
+    setSelectedImageIndex(index);
+    setShowImageViewer(true);
+  };
+
+  const handleNextImage = () => {
+    if (selectedImageIndex < galleryImages.length - 1) {
+      setSelectedImageIndex(selectedImageIndex + 1);
+    }
+  };
+
+  const handlePreviousImage = () => {
+    if (selectedImageIndex > 0) {
+      setSelectedImageIndex(selectedImageIndex - 1);
+    }
+  };
+
+  const handleDeleteImage = () => {
+    // Implement your delete logic here, using the selectedImageIndex or the image URL to identify which image to delete
+    setShowImageViewer(false); // Close the image viewer after deleting
   };
 
   const handleUploadButtonClick = () => {
@@ -179,24 +204,24 @@ function UploadFile() {
         console.error("Error fetching event data: ", error);
       });
 
-      socketRef.current.on('new-image', (data) => {
-        // When a new image is uploaded, fetch the gallery images again
-        axios
-          .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
-          .then((response) => {
-            setGalleryImages(response.data);
-          })
-          .catch((error) => {
-            console.error("Error fetching gallery images: ", error);
-          });
-      });
+    socketRef.current.on("new-image", (data) => {
+      // When a new image is uploaded, fetch the gallery images again
       axios
+        .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+        .then((response) => {
+          setGalleryImages(response.data);
+        })
+        .catch((error) => {
+          console.error("Error fetching gallery images: ", error);
+        });
+    });
+    axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
-          setGalleryImages(response.data);
+        setGalleryImages(response.data);
       })
       .catch((error) => {
-          console.error("Error fetching gallery images: ", error);
+        console.error("Error fetching gallery images: ", error);
       });
     axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
@@ -223,11 +248,11 @@ function UploadFile() {
       .catch((error) => {
         console.error("Error granting access:", error);
       });
-      return () => {
-        if (socketRef.current) {
-          socketRef.current.disconnect();
-        }
-      };
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
   }, [eventId, userId]);
 
   return (
@@ -351,19 +376,21 @@ function UploadFile() {
           Directory Polling
         </Button>
         <div
-        className={`directory-poller-container ${showDirectoryPoller ? "active" : ""} ${isPollerMinimized ? "minimized" : ""}`}
+          className={`directory-poller-container ${
+            showDirectoryPoller ? "active" : ""
+          } ${isPollerMinimized ? "minimized" : ""}`}
         >
-        <div className="directory-poller-header">
-          <h5>Directory Polling</h5>
-          <button onClick={handleMinimizeClick}>
-            {isPollerMinimized ? "Maximize" : "Minimize"}
-          </button>
-          <button onClick={toggleDirectoryPoller}>Close</button>
+          <div className="directory-poller-header">
+            <h5>Directory Polling</h5>
+            <button onClick={handleMinimizeClick}>
+              {isPollerMinimized ? "Maximize" : "Minimize"}
+            </button>
+            <button onClick={toggleDirectoryPoller}>Close</button>
+          </div>
+          <div className="directory-poller-content">
+            {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
+          </div>
         </div>
-        <div className="directory-poller-content">
-          {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
-        </div>
-      </div>
         <input
           ref={fileInputRef}
           type="file"
@@ -376,7 +403,11 @@ function UploadFile() {
       <div className="gallery mt-4">
         {showAllPhotos
           ? galleryImages.map((item, index) => (
-              <div key={index} className="gallery-item">
+              <div
+                key={index}
+                className="gallery-item"
+                onClick={() => handleImageClick(index)}
+              >
                 <img
                   src={item.imageUrl}
                   alt={`Uploaded ${index}`}
@@ -385,7 +416,11 @@ function UploadFile() {
               </div>
             ))
           : matchedImages.map((item, index) => (
-              <div key={index} className="gallery-item">
+              <div
+                key={index}
+                className="gallery-item"
+                onClick={() => handleImageClick(index)}
+              >
                 <img
                   src={item.matchedImageUrl}
                   alt={`Matched ${index}`}
@@ -394,6 +429,41 @@ function UploadFile() {
               </div>
             ))}
       </div>
+      {selectedImageIndex !== null && (
+        <Modal
+          show={showImageViewer}
+          onHide={() => setShowImageViewer(false)}
+          centered
+          size="lg"
+          backdropClassName="blurred-backdrop"
+        >
+          <Modal.Body>
+            <img
+              src={galleryImages[selectedImageIndex].imageUrl}
+              alt="Selected"
+              className="w-100"
+            />
+
+            <button onClick={() => setShowMenu(!showMenu)} className="menu-btn">
+              •••
+            </button>
+
+            {showMenu && (
+              <div className="menu-dropdown">
+                <button onClick={handleDeleteImage}>Delete</button>
+              </div>
+            )}
+
+            <button onClick={handlePreviousImage} className="nav-btn prev-btn">
+              ⬅️
+            </button>
+            <button onClick={handleNextImage} className="nav-btn next-btn">
+              ➡️
+            </button>
+          </Modal.Body>
+        </Modal>
+      )}
+
       <style>
         {`
           /* CSS styles for the gallery */
@@ -468,6 +538,81 @@ function UploadFile() {
           .directory-poller-content {
             padding: 10px;
           }
+
+          .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 10px;
+            cursor: pointer;
+          }
+          
+          .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 10px;
+            cursor: pointer;
+          }
+          
+          .prev-btn {
+            left: 10px;
+          }
+          
+          .next-btn {
+            right: 10px;
+          }
+
+          .menu-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 18px;
+          }
+          
+          .menu-dropdown {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+          }
+          
+          .menu-dropdown button {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            display: block;
+            width: 100%;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+          }
+          
+          .menu-dropdown button:last-child {
+            border-bottom: none;
+          }
+          
+          .blurred-backdrop {
+            backdrop-filter: blur(5px);
+          }          
+          
         `}
       </style>
     </Container>
