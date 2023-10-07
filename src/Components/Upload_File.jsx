@@ -30,6 +30,8 @@ function UploadFile() {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [selectedImageType, setSelectedImageType] = useState(null); // 'uploaded' or 'matched'
+  const [showDeleteToast, setShowDeleteToast] = useState(false);
   const [uploadingStatus, setUploadingStatus] = useState({
     uploading: false,
     success: false,
@@ -62,8 +64,9 @@ function UploadFile() {
     });
   };
 
-  const handleImageClick = (index) => {
+  const handleImageClick = (index, type) => {
     setSelectedImageIndex(index);
+    setSelectedImageType(type); // set the type of image clicked
     setShowImageViewer(true);
   };
 
@@ -80,8 +83,35 @@ function UploadFile() {
   };
 
   const handleDeleteImage = () => {
-    // Implement your delete logic here, using the selectedImageIndex or the image URL to identify which image to delete
-    setShowImageViewer(false); // Close the image viewer after deleting
+    if (selectedImageIndex !== null) {
+      const imageToDelete = galleryImages[selectedImageIndex];
+
+      // Extract the imageId from the imageUrl
+      const imageUrlSegments = imageToDelete.imageUrl.split("/");
+      const imageIdToDelete = imageUrlSegments[imageUrlSegments.length - 1];
+
+      // Make the DELETE API call
+      axios
+        .delete(
+          `${process.env.REACT_APP_API}/events/${eventId}/gallery/${imageIdToDelete}`
+        )
+        .then(() => {
+          // Update the gallery state by removing the deleted image
+          const updatedGalleryImages = galleryImages.filter(
+            (_, index) => index !== selectedImageIndex
+          );
+          setGalleryImages(updatedGalleryImages);
+
+          // Close the image viewer
+          setShowImageViewer(false);
+
+          // Show the toast notification
+          setShowDeleteToast(true);
+        })
+        .catch((error) => {
+          console.error("Error deleting image:", error);
+        });
+    }
   };
 
   const handleUploadButtonClick = () => {
@@ -406,7 +436,7 @@ function UploadFile() {
               <div
                 key={index}
                 className="gallery-item"
-                onClick={() => handleImageClick(index)}
+                onClick={() => handleImageClick(index, "uploaded")}
               >
                 <img
                   src={item.imageUrl}
@@ -419,7 +449,7 @@ function UploadFile() {
               <div
                 key={index}
                 className="gallery-item"
-                onClick={() => handleImageClick(index)}
+                onClick={() => handleImageClick(index, "matched")}
               >
                 <img
                   src={item.matchedImageUrl}
@@ -432,14 +462,21 @@ function UploadFile() {
       {selectedImageIndex !== null && (
         <Modal
           show={showImageViewer}
-          onHide={() => setShowImageViewer(false)}
+          onHide={() => {
+            setShowImageViewer(false);
+            setSelectedImageType(null);
+          }}
           centered
           size="lg"
           backdropClassName="blurred-backdrop"
         >
           <Modal.Body>
             <img
-              src={galleryImages[selectedImageIndex].imageUrl}
+              src={
+                selectedImageType === "uploaded"
+                  ? galleryImages[selectedImageIndex]?.imageUrl
+                  : matchedImages[selectedImageIndex]?.matchedImageUrl
+              }
               alt="Selected"
               className="w-100"
             />
@@ -463,7 +500,23 @@ function UploadFile() {
           </Modal.Body>
         </Modal>
       )}
-
+      <Toast
+        style={{
+          position: "fixed",  // Change from "absolute" to "fixed"
+          bottom: 20,         // Change from "top" to "bottom"
+          right: 20,
+          zIndex: 1000,
+        }}
+        onClose={() => setShowDeleteToast(false)}
+        show={showDeleteToast}
+        delay={3000}
+        autohide
+      >
+        <Toast.Header>
+          <strong className="mr-auto">Notification</strong>
+        </Toast.Header>
+        <Toast.Body>Image successfully deleted!</Toast.Body>
+      </Toast>
       <style>
         {`
           /* CSS styles for the gallery */
