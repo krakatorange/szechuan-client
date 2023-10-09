@@ -9,6 +9,8 @@ import logo from "../Logo/szechuan_chicken.png";
 import text_logo from "../Logo/szechuan_text_logo.png";
 import { useUserAuth } from "../UserContextProvider";
 import "react-toastify/dist/ReactToastify.css";
+import {getEventUrlFromCookie } from '../eventCookieHandler';
+
 
 function SignUp() {
   const [phone, setPhone] = useState("");
@@ -24,20 +26,39 @@ function SignUp() {
   const userId = user?.uid;
 
   useEffect(() => {
+    console.log("useEffect triggered");
+
     let timeoutId;
     if (isLoading) {
-      timeoutId = setTimeout(() => {
-        setIsLoading(false);
+        console.log("isLoading is true");
+        timeoutId = setTimeout(() => {
+            setIsLoading(false);
+            console.log("Timeout reached, checking savedEventUrl and user status");
 
-        if (confirmOTP.user?.isNewUser) {
-          navigate(`/${userId}/selfie`);
-        } else {
-          navigate("/dashboard");
-        }
-      }, 4000);
+            const savedEventUrl = getEventUrlFromCookie();
+            console.log("Retrieved savedEventUrl from cookie:", savedEventUrl);
+
+            if (savedEventUrl) {
+                // If there's a saved event URL, redirect to it
+                console.log("Redirecting to savedEventUrl:", savedEventUrl);
+                navigate(savedEventUrl);
+            } else if (confirmOTP.user?.isNewUser) {
+                console.log("New user detected. Redirecting to selfie page.");
+                navigate(`/${userId}/selfie`);
+            } else {
+                console.log("Existing user detected. Redirecting to dashboard.");
+                navigate("/dashboard");
+            }
+        }, 4000);
     }
-    return () => clearTimeout(timeoutId);
-  }, [isLoading, confirmOTP.user, userId, navigate]);
+    return () => {
+        console.log("Cleaning up timeout");
+        clearTimeout(timeoutId);
+    };
+}, [isLoading, confirmOTP.user, userId, navigate]);
+
+
+
 
   const handleSendVerificationCode = async () => {
     setError("");
