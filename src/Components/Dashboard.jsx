@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card } from 'react-bootstrap';
 import CustomNavbar from './CustomNavbar';
-import NotificationBox from './NotificationBox';
+import NotificationBox from './NotificationBox'; // Renamed from NotificationBox for clarity
 import axios from 'axios';
 import { useUserAuth } from "../UserContextProvider";
 
@@ -12,22 +12,25 @@ function Dashboard() {
   const userId = user?.uid;
 
   useEffect(() => {
+    // Fetch the events created by the user
     axios.get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then(response => {
         console.log('Fetched main events:', response.data);
         setEvents(response.data);
-
+  
         // Fetch accessed events for each event
         const accessedEventsPromises = response.data.map(event => 
           axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}/${event.id}`)
         );
-
+  
         return Promise.all(accessedEventsPromises);
       })
       .then(accessedEventsResponses => {
         console.log('Fetched accessed events responses:', accessedEventsResponses);
-        // Extract data from axios responses and set to state
-        const accessedEventsData = accessedEventsResponses.map(response => response.data);
+        // Filter out any null responses (assuming that a null response means the user doesn't have access)
+        const accessedEventsData = accessedEventsResponses
+          .filter(response => response.data !== null) // assuming a 'null' response means "no access"
+          .map(response => response.data);
         console.log('Extracted accessed events data:', accessedEventsData);
         setAccessedEvents(accessedEventsData);
       })
@@ -45,9 +48,16 @@ function Dashboard() {
           <h5>You are all checked in!</h5>
           <p>You'll get a text when photos from your event are uploaded.</p>
           <div style={{ display: 'grid' }}>
+            {/* Display the events created by the user */}
             {events.map((event, index) => (
               <div key={event.id}>
-                <NotificationBox event={event} accessedEvent={accessedEvents[index]} />
+                <NotificationBox event={event} />
+              </div>
+            ))}
+            {/* Display the events the user has access to */}
+            {accessedEvents.map((event, index) => (
+              <div key={event.id}>
+                <NotificationBox event={event} />
               </div>
             ))}
           </div>
