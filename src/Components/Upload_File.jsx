@@ -245,18 +245,15 @@ function UploadFile() {
           console.error("Error fetching gallery images: ", error);
         });
     });
-    axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}/${eventId}`)
+    axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
     .then(response => {
-      if (response.data) {
-        console.log('Event details:', response.data);
-        setEvent(response.data);
-      } else {
-        console.log("User does not have access to this event or event does not exist.");
-      }
+        console.log(response.data);  // The array of events
+        // Find the current event using the eventId
+        const currentEvent = response.data.find(event => event.id === eventId);
+        setEvent(currentEvent);  // Set the current event as your state
     })
     .catch(error => {
-      console.error("Error fetching event details: ", error);
-      // Handle error scenario
+        console.error("Error fetching event details: ", error);
     });
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)

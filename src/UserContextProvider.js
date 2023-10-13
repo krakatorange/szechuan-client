@@ -6,6 +6,7 @@ import {
   signOut,
 } from "firebase/auth";
 import { auth } from "./firebase";
+import { saveEventUrlInCookie } from './eventCookieHandler';
 
 const UserAuthContext = createContext();
 
@@ -17,6 +18,13 @@ export function UserAuthContextProvider({ children }) {
   const [user, setUser] = useState(null); // Store user information
 
   useEffect(() => {
+
+    if (window.location.pathname.includes("/event/")) {
+      console.log("Event URL detected:", window.location.pathname);
+      saveEventUrlInCookie(window.location.pathname);
+    }
+
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         // console.log("Auth", currentUser);

@@ -1,43 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Card } from 'react-bootstrap';
-import CustomNavbar from './CustomNavbar';
-import NotificationBox from './NotificationBox'; // Renamed from NotificationBox for clarity
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { Container, Card } from "react-bootstrap";
+import CustomNavbar from "./CustomNavbar";
+import NotificationBox from "./NotificationBox";
+import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 
 function Dashboard() {
   const [events, setEvents] = useState([]);
-  const [accessedEvents, setAccessedEvents] = useState([]);
-  const { user } = useUserAuth();
+  const [accessedEvents, setAccessedEvents] = useState([]); // Changed to a single object, not an array
+  const { user } = useUserAuth(); // Retrieve user from context
   const userId = user?.uid;
 
   useEffect(() => {
     // Fetch the events created by the user
-    axios.get(`${process.env.REACT_APP_API}/events/all/${userId}`)
-      .then(response => {
-        console.log('Fetched main events:', response.data);
+    axios
+      .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
+      .then((response) => {
+        console.log("Fetched main events:", response.data);
         setEvents(response.data);
-  
-        // Fetch accessed events for each event
-        const accessedEventsPromises = response.data.map(event => 
-          axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}/${event.id}`)
-        );
-  
-        return Promise.all(accessedEventsPromises);
       })
-      .then(accessedEventsResponses => {
-        console.log('Fetched accessed events responses:', accessedEventsResponses);
-        // Filter out any null responses (assuming that a null response means the user doesn't have access)
-        const accessedEventsData = accessedEventsResponses
-          .filter(response => response.data !== null) // assuming a 'null' response means "no access"
-          .map(response => response.data);
-        console.log('Extracted accessed events data:', accessedEventsData);
-        setAccessedEvents(accessedEventsData);
-      })
-      .catch(error => {
-        console.error('Error fetching events or accessed events: ', error);
+      .catch((error) => {
+        console.error("Error fetching main events: ", error);
       });
-  }, [userId]);
+
+    // Fetch the accessed event's details
+    axios
+      .get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
+      .then((response) => {
+        console.log("Fetched accessed event response:", response.data);
+        setAccessedEvents(response.data); // Set as an array of accessed events
+      })
+      .catch((error) => {
+        console.error("Error fetching accessed event: ", error);
+      });
+  }, [userId]); // Dependency array with userId
 
   return (
     <Container>
@@ -47,17 +43,17 @@ function Dashboard() {
         <Card.Body>
           <h5>You are all checked in!</h5>
           <p>You'll get a text when photos from your event are uploaded.</p>
-          <div style={{ display: 'grid' }}>
+          <div style={{ display: "grid" }}>
             {/* Display the events created by the user */}
             {events.map((event, index) => (
               <div key={event.id}>
                 <NotificationBox event={event} />
               </div>
             ))}
-            {/* Display the events the user has access to */}
-            {accessedEvents.map((event, index) => (
-              <div key={event.id}>
-                <NotificationBox event={event} />
+            {/* Display the event the user has accessed, if available */}
+            {accessedEvents.map((accessedEvent, index) => (
+              <div key={accessedEvent.id}>
+                <NotificationBox event={accessedEvent} />
               </div>
             ))}
           </div>
