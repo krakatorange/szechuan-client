@@ -45,6 +45,7 @@ function UploadFile() {
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     setSelectedFiles(files);
+    handleUploadButtonClick(files);
   };
 
   const handleMinimizeClick = () => {
@@ -161,7 +162,7 @@ function UploadFile() {
               uploadNextFile(index + 1);
             })
             .catch((error) => {
-              console.log("Error uploading files:", error);
+              console.error("Error uploading files:");
               if (error.message === "Image already exists in the gallery.") {
                 setUploadingStatus({
                   uploading: false,
@@ -169,6 +170,7 @@ function UploadFile() {
                   error: null,
                   exists: true,
                 });
+                fileInputRef.current.value = null;
               } else {
                 setUploadingStatus({
                   uploading: false,
@@ -176,8 +178,8 @@ function UploadFile() {
                   error: "Image Already exists.",
                   exists: false,
                 });
+                fileInputRef.current.value = null;
               }
-              fileInputRef.current.value = "";
               setSelectedFiles([]);
             });
           axios
