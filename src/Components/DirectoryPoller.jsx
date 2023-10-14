@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import io from "socket.io-client";
 
-function MonitorImages({ eventId }) {
+function MonitorImages({  show, onHide, eventId }) {
   const [url, setUrl] = useState("");
   const [newImages, setNewImages] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -130,24 +131,30 @@ function MonitorImages({ eventId }) {
   }, [newImages]);
 
   return (
-    <div>
-      <input
-        type="text"
-        value={url}
-        onChange={(e) => setUrl(e.target.value)}
-        placeholder="Enter URL to monitor"
-      />
-      <button onClick={startMonitoringAndUploading} disabled={isUploading}>
-        Start
-      </button>
-      <button onClick={stopUploading} disabled={!isUploading}>
-        Stop
-      </button>
+    <Modal show={show} onHide={onHide} centered> {/* Utilizing the Modal component */}
+      <Modal.Header closeButton>
+        <Modal.Title>Monitor External Directory</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <input
+          type="text"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="Enter URL to monitor"
+          style={{ width: "100%", marginBottom: "10px" }}
+        />
+        <Button onClick={startMonitoringAndUploading} disabled={isUploading} variant="primary" style={{ marginRight: "10px" }}>
+          Start
+        </Button>
+        <Button onClick={stopUploading} disabled={!isUploading} variant="secondary">
+          Stop
+        </Button>
 
-      {loading && <p>Loading...</p>}
-      {isUploading && newImages.length === 0 && <p>Waiting for new images...</p>}
-      {showTick && <span>&#10003;</span>}  {/* Display the tick when showTick is true */}
-    </div>
+        {loading && <p>Loading...</p>}
+        {isUploading && newImages.length === 0 && <p>Waiting for new images...</p>}
+        {showTick && <span>&#10003;</span>} {/* Display the tick when showTick is true */}
+      </Modal.Body>
+    </Modal>
   );
 }
 
