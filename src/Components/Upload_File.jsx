@@ -534,6 +534,7 @@ function UploadFile() {
           onHide={() => {
             setShowImageViewer(false);
             setSelectedImageType(null);
+            setShowMenu(false); 
           }}
           centered
           size="lg"
