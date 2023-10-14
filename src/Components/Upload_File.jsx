@@ -13,6 +13,7 @@ function UploadFile() {
   const { eventId } = useParams();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [event, setEvent] = useState(null);
+  const [accessedEvent, setAccessedEvent] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
   const [showAllPhotos, setShowAllPhotos] = useState(true); // Add state for toggling between all photos and personal photos
   const [loading, setLoading] = useState(true); // Add loading state for fetching matched images
@@ -245,16 +246,17 @@ function UploadFile() {
           console.error("Error fetching gallery images: ", error);
         });
     });
-    axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
-    .then(response => {
-        console.log(response.data);  // The array of events
-        // Find the current event using the eventId
-        const currentEvent = response.data.find(event => event.id === eventId);
-        setEvent(currentEvent);  // Set the current event as your state
-    })
-    .catch(error => {
-        console.log("Error fetching event details: ");
-    });
+    axios
+      .get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
+      .then((response) => {
+        const currentAccessedEvent = response.data.find(
+          (event) => event.id === eventId
+        );
+        setAccessedEvent(currentAccessedEvent);
+      })
+      .catch((error) => {
+        console.log("Error fetching accessed event details: ", error);
+      });
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
@@ -298,7 +300,7 @@ function UploadFile() {
   return (
     <Container>
       <CustomNavbar />
-      {event && (
+      {event ? (
         <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
           <Card.Img
             variant="top"
@@ -336,6 +338,48 @@ function UploadFile() {
             <button onClick={handleInviteButtonClick}>Invite</button>
           </Card.Body>
         </Card>
+      ) : accessedEvent ? (
+        <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
+          <Card.Img
+            variant="top"
+            src={accessedEvent.coverPhotoUrl}
+            style={{ width: "100%", height: "500px", objectFit: "cover" }}
+          />
+          <Card.Body
+            className="text-center"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "rgba(255, 255, 255, 0.2)",
+              borderBottomLeftRadius: "5px",
+              borderBottomRightRadius: "5px",
+              color: "white",
+              width: "100%",
+              maxWidth: "100vw",
+              boxSizing: "border-box",
+            }}
+          >
+            <Card.Title>{accessedEvent.eventName}</Card.Title>
+            <Card.Text>
+              Event Date/Time: {accessedEvent.eventDateTime}
+            </Card.Text>
+            <Card.Text>Location: {accessedEvent.eventLocation}</Card.Text>
+            <button onClick={() => setShowAllPhotos(true)}>All Photos</button>
+            <button
+              onClick={() => {
+                setShowAllPhotos(false);
+                fetchMatchedImages(); // Fetch matched images when the user clicks "Personal Gallery"
+              }}
+            >
+              Personal Gallery
+            </button>
+            <button onClick={handleInviteButtonClick}>Invite</button>
+          </Card.Body>
+        </Card>
+      ) : (
+        <p>Loading...</p> // or your preferred loading indicator
       )}
       {/* QR Code Modal */}
       <Modal show={showQRModal} onHide={toggleQRModal}>
@@ -512,8 +556,8 @@ function UploadFile() {
       )}
       <Toast
         style={{
-          position: "fixed",  // Change from "absolute" to "fixed"
-          bottom: 20,         // Change from "top" to "bottom"
+          position: "fixed", // Change from "absolute" to "fixed"
+          bottom: 20, // Change from "top" to "bottom"
           right: 20,
           zIndex: 1000,
         }}

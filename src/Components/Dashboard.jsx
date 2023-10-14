@@ -31,7 +31,7 @@ function Dashboard() {
         setAccessedEvents(response.data); // Set as an array of accessed events
       })
       .catch((error) => {
-        console.log("Error fetching accessed event: ");
+        console.log("Error fetching accessed event:");
       });
   }, [userId]); // Dependency array with userId
 
