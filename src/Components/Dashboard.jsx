@@ -20,7 +20,7 @@ function Dashboard() {
         setEvents(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching main events: ", error);
+        console.log("Error fetching main events: ");
       });
 
     // Fetch the accessed event's details
@@ -31,7 +31,7 @@ function Dashboard() {
         setAccessedEvents(response.data); // Set as an array of accessed events
       })
       .catch((error) => {
-        console.error("Error fetching accessed event: ", error);
+        console.log("Error fetching accessed event: ");
       });
   }, [userId]); // Dependency array with userId
 

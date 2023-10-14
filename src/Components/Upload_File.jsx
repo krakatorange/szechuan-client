@@ -160,7 +160,7 @@ function UploadFile() {
               uploadNextFile(index + 1);
             })
             .catch((error) => {
-              console.error("Error uploading files:", error);
+              console.log("Error uploading files:", error);
               if (error.message === "Image already exists in the gallery.") {
                 setUploadingStatus({
                   uploading: false,
@@ -253,7 +253,7 @@ function UploadFile() {
         setEvent(currentEvent);  // Set the current event as your state
     })
     .catch(error => {
-        console.error("Error fetching event details: ", error);
+        console.log("Error fetching event details: ");
     });
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
@@ -272,8 +272,8 @@ function UploadFile() {
         console.log("Face detection completed:", response.data.message);
         // Handle the response as needed
       })
-      .catch((error) => {
-        console.error("Error detecting face:", error);
+      .catch(() => {
+        console.log("Error detecting face:");
       });
     // Send a request to grant access based on the "access" query parameter
     axios
@@ -286,7 +286,7 @@ function UploadFile() {
         console.log("Access_Granted");
       })
       .catch((error) => {
-        console.error("Error granting access:", error);
+        console.log("Error granting access:");
       });
     return () => {
       if (socketRef.current) {
