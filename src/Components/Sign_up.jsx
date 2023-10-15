@@ -10,6 +10,7 @@ import text_logo from "../Logo/szechuan_text_logo.png";
 import { useUserAuth } from "../UserContextProvider";
 import "react-toastify/dist/ReactToastify.css";
 import {getEventUrlFromCookie } from '../eventCookieHandler';
+import Logger from "../logger";
 
 
 function SignUp() {
@@ -26,33 +27,33 @@ function SignUp() {
   const userId = user?.uid;
 
   useEffect(() => {
-    console.log("useEffect triggered");
+    Logger.log("useEffect triggered");
 
     let timeoutId;
     if (isLoading) {
-        console.log("isLoading is true");
+        Logger.log("isLoading is true");
         timeoutId = setTimeout(() => {
             setIsLoading(false);
-            console.log("Timeout reached, checking savedEventUrl and user status");
+            Logger.log("Timeout reached, checking savedEventUrl and user status");
 
             const savedEventUrl = getEventUrlFromCookie();
-            console.log("Retrieved savedEventUrl from cookie:", savedEventUrl);
+            Logger.log("Retrieved savedEventUrl from cookie:", savedEventUrl);
 
             if (savedEventUrl) {
                 // If there's a saved event URL, redirect to it
-                console.log("Redirecting to savedEventUrl:", savedEventUrl);
+                Logger.log("Redirecting to savedEventUrl:", savedEventUrl);
                 navigate(savedEventUrl);
             } else if (confirmOTP.user?.isNewUser) {
-                console.log("New user detected. Redirecting to selfie page.");
+                Logger.log("New user detected. Redirecting to selfie page.");
                 navigate(`/${userId}/selfie`);
             } else {
-                console.log("Existing user detected. Redirecting to dashboard.");
+                Logger.log("Existing user detected. Redirecting to dashboard.");
                 navigate("/dashboard");
             }
         }, 4000);
     }
     return () => {
-        console.log("Cleaning up timeout");
+        Logger.log("Cleaning up timeout");
         clearTimeout(timeoutId);
     };
 }, [isLoading, confirmOTP.user, userId, navigate]);

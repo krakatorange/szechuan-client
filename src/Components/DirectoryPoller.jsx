@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import io from "socket.io-client";
+import Logger from "../logger";
 
 function MonitorImages({  show, onHide, eventId }) {
   const [url, setUrl] = useState("");
@@ -34,10 +35,10 @@ function MonitorImages({  show, onHide, eventId }) {
           return [...prevNewImages, ...newDetectedImages];
         });
       } else {
-        console.error("Unexpected response format");
+        Logger.error("Unexpected response format");
       }
     } catch (err) {
-      console.error("Failed to fetch images:", err);
+      Logger.error("Failed to fetch images:", err);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ function MonitorImages({  show, onHide, eventId }) {
             }
           );
 
-          console.log(`Image ${imageName} uploaded successfully!`);
+          Logger.log(`Image ${imageName} uploaded successfully!`);
 
           setUploadedImages((prevImages) => [...prevImages, imageSrc]);
           setNewImages((prevNewImages) =>
@@ -85,7 +86,7 @@ function MonitorImages({  show, onHide, eventId }) {
           setTimeout(() => setShowTick(false), 2000);  // Hide the tick after 2 seconds
 
         } catch (error) {
-          console.error("Error uploading image:", error);
+          Logger.error("Error uploading image:", error);
         }
       }
     }
@@ -111,7 +112,7 @@ function MonitorImages({  show, onHide, eventId }) {
     // Set up the event listener for 'new-image'
     socketRef.current.on('new-image', (data) => {
         // Handle the new image data as needed
-        console.log("New image:", data.imageUrl);
+        Logger.log("New image:", data.imageUrl);
         // You can add the new image URL to your state if needed
         // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
     });

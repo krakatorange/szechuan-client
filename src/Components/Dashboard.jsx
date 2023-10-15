@@ -4,6 +4,8 @@ import CustomNavbar from "./CustomNavbar";
 import NotificationBox from "./NotificationBox";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
+import Logger from '../logger'; // make sure the path is correct
+
 
 function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -16,22 +18,22 @@ function Dashboard() {
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
-        console.log("Fetched main events:", response.data);
+        Logger.log("Fetched main events:", response.data);
         setEvents(response.data);
       })
       .catch((error) => {
-        console.log("Error fetching main events: ");
+        Logger.log("Error fetching main events: ");
       });
 
     // Fetch the accessed event's details
     axios
       .get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
       .then((response) => {
-        console.log("Fetched accessed event response:", response.data);
+        Logger.log("Fetched accessed event response:", response.data);
         setAccessedEvents(response.data); // Set as an array of accessed events
       })
       .catch((error) => {
-        console.log("Error fetching accessed event:");
+        Logger.log("Error fetching accessed event:");
       });
   }, [userId]); // Dependency array with userId
 

@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
 import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
+import Logger from "../logger";
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -110,7 +111,7 @@ function UploadFile() {
           setShowDeleteToast(true);
         })
         .catch((error) => {
-          console.error("Error deleting image:", error);
+          Logger.error("Error deleting image:", error);
         });
     }
   };
@@ -128,9 +129,9 @@ function UploadFile() {
   };
 
   const uploadFiles = (filesToUpload) => {
-    console.log("uploadFiles function called with:", filesToUpload);
+    Logger.log("uploadFiles function called with:", filesToUpload);
     if (filesToUpload.length === 0) {
-      console.log("No files to upload."); // And this
+      Logger.log("No files to upload."); // And this
       return;
     } // if no files, just return
 
@@ -176,7 +177,7 @@ function UploadFile() {
             uploadNextFile(index + 1);
           })
           .catch((error) => {
-            console.error("Error uploading files:");
+            Logger.error("Error uploading files:");
             if (error.message === "Image already exists in the gallery.") {
               setUploadingStatus({
                 uploading: false,
@@ -202,7 +203,7 @@ function UploadFile() {
             setGalleryImages(response.data);
           })
           .catch((error) => {
-            console.error("Error fetching gallery images: ", error);
+            Logger.error("Error fetching gallery images: ", error);
           });
       }
     };
@@ -220,7 +221,7 @@ function UploadFile() {
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching matched images:", error);
+        Logger.error("Error fetching matched images:", error);
         setLoading(false);
       });
   };
@@ -247,7 +248,7 @@ function UploadFile() {
         setEvent(selectedEvent);
       })
       .catch((error) => {
-        console.error("Error fetching event data: ", error);
+        Logger.error("Error fetching event data: ", error);
       });
 
     socketRef.current.on("new-image", (data) => {
@@ -258,7 +259,7 @@ function UploadFile() {
           setGalleryImages(response.data);
         })
         .catch((error) => {
-          console.error("Error fetching gallery images: ", error);
+          Logger.error("Error fetching gallery images: ", error);
         });
     });
     axios
@@ -270,7 +271,7 @@ function UploadFile() {
         setAccessedEvent(currentAccessedEvent);
       })
       .catch((error) => {
-        console.log("Error fetching accessed event details: ", error);
+        Logger.log("Error fetching accessed event details: ", error);
       });
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
@@ -278,7 +279,7 @@ function UploadFile() {
         setGalleryImages(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching gallery images: ", error);
+        Logger.error("Error fetching gallery images: ", error);
       });
     axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
@@ -286,11 +287,11 @@ function UploadFile() {
         eventId: eventId,
       })
       .then((response) => {
-        console.log("Face detection completed:", response.data.message);
+        Logger.log("Face detection completed:", response.data.message);
         // Handle the response as needed
       })
       .catch(() => {
-        console.log("Error detecting face:");
+        Logger.log("Error detecting face:");
       });
     // Send a request to grant access based on the "access" query parameter
     axios
@@ -300,10 +301,10 @@ function UploadFile() {
       })
       .then(() => {
         // Access granted successfully
-        console.log("Access_Granted");
+        Logger.log("Access_Granted");
       })
       .catch((error) => {
-        console.log("Error granting access:");
+        Logger.log("Error granting access:");
       });
     return () => {
       if (socketRef.current) {

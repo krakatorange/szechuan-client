@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { parseISO, formatDistanceToNow, format } from 'date-fns';
 import { Link } from 'react-router-dom';
+import Logger from '../logger';
 
 function EventNotification({ event }) {
   const { id, eventName, eventDateTime, coverPhotoUrl, eventLocation } = event; // Assuming you have eventLocation in your event object
@@ -14,7 +15,7 @@ function EventNotification({ event }) {
       setTimeRemaining(distance);
 
       if (!alertShown && new Date() > eventTime) {
-        console.log(`Event "${eventName}" is happening now!`);
+        Logger.log(`Event "${eventName}" is happening now!`);
         setAlertShown(true);
       }
     }, 1000);
