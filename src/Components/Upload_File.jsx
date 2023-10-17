@@ -9,6 +9,7 @@ import DirectoryPoller from "./DirectoryPoller";
 import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
+import { useDirectoryPoller } from "../DirectoryPollerContext";
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -22,12 +23,18 @@ function UploadFile() {
   const { user } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const {
+    isPollerRunning,
+    setIsPollerMinimized,
+    setCurrentEventId,
+    isPollerMinimized,
+  } = useDirectoryPoller();
   const navigate = useNavigate();
   const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [isPollerMinimized, setIsPollerMinimized] = useState(false);
+  //const [isPollerMinimized, setIsPollerMinimized] = useState(false);
   const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
@@ -42,6 +49,11 @@ function UploadFile() {
   });
 
   const galleryUrl = `${window.location.origin}/event/${eventId}`;
+
+  useEffect(() => {
+    // When the component mounts, set the currentEventId in your global state
+    setCurrentEventId(eventId);
+  }, [eventId, setCurrentEventId]);
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
@@ -475,11 +487,13 @@ function UploadFile() {
         >
           Directory Polling
         </Button>
-        <DirectoryPoller 
-        show={showDirectoryPoller} 
-        onHide={toggleDirectoryPoller} 
-        eventId={eventId} 
-      />
+        {showDirectoryPoller && (
+          <DirectoryPoller
+            show={showDirectoryPoller}
+            onHide={toggleDirectoryPoller}
+            eventId={eventId}
+          />
+        )}
         <input
           ref={fileInputRef}
           type="file"
@@ -524,7 +538,7 @@ function UploadFile() {
           onHide={() => {
             setShowImageViewer(false);
             setSelectedImageType(null);
-            setShowMenu(false); 
+            setShowMenu(false);
           }}
           centered
           size="lg"

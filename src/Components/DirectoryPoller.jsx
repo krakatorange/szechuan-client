@@ -1,18 +1,32 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import io from "socket.io-client";
 import Logger from "../logger";
+import { DirectoryPollerContext } from "../DirectoryPollerContext"; // adjust the import path accordingly
 
-function MonitorImages({  show, onHide, eventId }) {
-  const [url, setUrl] = useState("");
-  const [newImages, setNewImages] = useState([]);
-  const [uploadedImages, setUploadedImages] = useState([]);
+function MonitorImages({ show, onHide, eventId }) {
+  //const [url, setUrl] = useState("");
+  //const [newImages, setNewImages] = useState([]);
+  //const [uploadedImages, setUploadedImages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showTick, setShowTick] = useState(false);  // New state for showing the tick
+  //const [isUploading, setIsUploading] = useState(false);
+  const [showTick, setShowTick] = useState(false); // New state for showing the tick
   const socketRef = useRef(null);
   const uploadInterval = useRef(null);
+  const {
+    url,
+    setUrl,
+    newImages,
+    setNewImages,
+    uploadedImages,
+    setUploadedImages,
+    isUploading,
+    setIsUploading,
+    isPollerRunning,
+    setIsPollerRunning,
+    // ... other states and functions from context
+  } = useContext(DirectoryPollerContext);
 
   const monitorImages = async () => {
     setLoading(true);
@@ -83,8 +97,7 @@ function MonitorImages({  show, onHide, eventId }) {
 
           // Show the tick when an image is uploaded
           setShowTick(true);
-          setTimeout(() => setShowTick(false), 2000);  // Hide the tick after 2 seconds
-
+          setTimeout(() => setShowTick(false), 2000); // Hide the tick after 2 seconds
         } catch (error) {
           Logger.error("Error uploading image:", error);
         }
@@ -93,6 +106,7 @@ function MonitorImages({  show, onHide, eventId }) {
   };
 
   const startMonitoringAndUploading = () => {
+    setIsPollerRunning(true);
     setIsUploading(true);
 
     uploadInterval.current = setInterval(async () => {
@@ -101,6 +115,7 @@ function MonitorImages({  show, onHide, eventId }) {
   };
 
   const stopUploading = () => {
+    setIsPollerRunning(false);
     setIsUploading(false);
     clearInterval(uploadInterval.current);
   };
@@ -110,18 +125,18 @@ function MonitorImages({  show, onHide, eventId }) {
     socketRef.current = io(process.env.REACT_APP_API);
 
     // Set up the event listener for 'new-image'
-    socketRef.current.on('new-image', (data) => {
-        // Handle the new image data as needed
-        Logger.log("New image:", data.imageUrl);
-        // You can add the new image URL to your state if needed
-        // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
+    socketRef.current.on("new-image", (data) => {
+      // Handle the new image data as needed
+      Logger.log("New image:", data.imageUrl);
+      // You can add the new image URL to your state if needed
+      // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
     });
 
     // Clean up the socket connection when the component is unmounted
     return () => {
-        if (socketRef.current) {
-            socketRef.current.disconnect();
-        }
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
     };
   }, []);
 
@@ -132,7 +147,11 @@ function MonitorImages({  show, onHide, eventId }) {
   }, [newImages]);
 
   return (
-    <Modal show={show} onHide={onHide} centered> {/* Utilizing the Modal component */}
+    <Modal
+      show={show}
+      onHide={onHide} // just call onHide, don't alter the poller's state
+      centered
+    >
       <Modal.Header closeButton>
         <Modal.Title>Monitor External Directory</Modal.Title>
       </Modal.Header>
@@ -144,16 +163,27 @@ function MonitorImages({  show, onHide, eventId }) {
           placeholder="Enter URL to monitor"
           style={{ width: "100%", marginBottom: "10px" }}
         />
-        <Button onClick={startMonitoringAndUploading} disabled={isUploading} variant="primary" style={{ marginRight: "10px" }}>
+        <Button
+          onClick={startMonitoringAndUploading}
+          disabled={isUploading}
+          variant="primary"
+          style={{ marginRight: "10px" }}
+        >
           Start
         </Button>
-        <Button onClick={stopUploading} disabled={!isUploading} variant="secondary">
+        <Button
+          onClick={stopUploading}
+          disabled={!isUploading}
+          variant="secondary"
+        >
           Stop
         </Button>
-
         {loading && <p>Loading...</p>}
-        {isUploading && newImages.length === 0 && <p>Waiting for new images...</p>}
-        {showTick && <span>&#10003;</span>} {/* Display the tick when showTick is true */}
+        {isUploading && newImages.length === 0 && (
+          <p>Waiting for new images...</p>
+        )}
+        {showTick && <span>&#10003;</span>}{" "}
+        {/* Display the tick when showTick is true */}
       </Modal.Body>
     </Modal>
   );
