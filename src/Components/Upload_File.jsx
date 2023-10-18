@@ -4,7 +4,6 @@ import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
-import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
 import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
@@ -24,18 +23,14 @@ function UploadFile() {
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const {
-    isPollerRunning,
-    setIsPollerMinimized,
     setCurrentEventId,
-    isPollerMinimized,
+    showMonitorImages,
+    setShowMonitorImages,
   } = useDirectoryPoller();
-  const navigate = useNavigate();
   const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  //const [isPollerMinimized, setIsPollerMinimized] = useState(false);
-  const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -60,12 +55,8 @@ function UploadFile() {
     uploadFiles(files);
   };
 
-  const handleMinimizeClick = () => {
-    setIsPollerMinimized(!isPollerMinimized);
-  };
-
   const toggleDirectoryPoller = () => {
-    setShowDirectoryPoller(!showDirectoryPoller);
+    setShowMonitorImages(!showMonitorImages);
   };
 
   const toggleQRModal = () => {
@@ -487,13 +478,11 @@ function UploadFile() {
         >
           Directory Polling
         </Button>
-        {showDirectoryPoller && (
-          <DirectoryPoller
-            show={showDirectoryPoller}
-            onHide={toggleDirectoryPoller}
-            eventId={eventId}
-          />
-        )}
+        <DirectoryPoller
+          show={showMonitorImages} // use showMonitorImages from context to control visibility
+          onHide={toggleDirectoryPoller}
+          eventId={eventId}
+        />
         <input
           ref={fileInputRef}
           type="file"

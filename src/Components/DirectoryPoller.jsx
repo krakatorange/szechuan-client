@@ -6,11 +6,8 @@ import Logger from "../logger";
 import { DirectoryPollerContext } from "../DirectoryPollerContext"; // adjust the import path accordingly
 
 function MonitorImages({ show, onHide, eventId }) {
-  //const [url, setUrl] = useState("");
-  //const [newImages, setNewImages] = useState([]);
-  //const [uploadedImages, setUploadedImages] = useState([]);
+
   const [loading, setLoading] = useState(false);
-  //const [isUploading, setIsUploading] = useState(false);
   const [showTick, setShowTick] = useState(false); // New state for showing the tick
   const socketRef = useRef(null);
   const uploadInterval = useRef(null);
@@ -23,7 +20,7 @@ function MonitorImages({ show, onHide, eventId }) {
     setUploadedImages,
     isUploading,
     setIsUploading,
-    isPollerRunning,
+    //isPollerRunning,
     setIsPollerRunning,
     // ... other states and functions from context
   } = useContext(DirectoryPollerContext);

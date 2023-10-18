@@ -14,9 +14,8 @@ function CustomNavbar() {
   // Directory Poller state and functions from context
   const {
     isPollerRunning,
-    setIsPollerMinimized,
     currentEventId,
-    isPollerMinimized,
+    setShowMonitorImages,
   } = useDirectoryPoller();
 
   const toggleDrawer = () => {
@@ -35,6 +34,7 @@ function CustomNavbar() {
   const handleDirectoryPollerClick = () => {
     if (currentEventId) {
       navigate(`/event/${currentEventId}`);
+      setShowMonitorImages(true);
     }
   };
 

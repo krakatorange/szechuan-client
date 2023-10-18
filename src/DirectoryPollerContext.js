@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext } from "react";
 
 // Create a Context
 export const DirectoryPollerContext = createContext();
@@ -12,9 +12,29 @@ export const DirectoryPollerProvider = ({ children }) => {
   const [newImages, setNewImages] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [showMonitorImages, setShowMonitorImages] = useState(false);
 
   return (
-    <DirectoryPollerContext.Provider value={{ isPollerRunning, setIsPollerRunning, isPollerMinimized, setIsPollerMinimized, currentEventId, setCurrentEventId, url, setUrl, newImages,setNewImages, uploadedImages,setUploadedImages, isUploading ,setIsUploading }}>
+    <DirectoryPollerContext.Provider
+      value={{
+        isPollerRunning,
+        setIsPollerRunning,
+        isPollerMinimized,
+        setIsPollerMinimized,
+        currentEventId,
+        setCurrentEventId,
+        url,
+        setUrl,
+        newImages,
+        setNewImages,
+        uploadedImages,
+        setUploadedImages,
+        isUploading,
+        setIsUploading,
+        showMonitorImages,
+        setShowMonitorImages,
+      }}
+    >
       {children}
     </DirectoryPollerContext.Provider>
   );
