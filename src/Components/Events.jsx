@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 // import { collection, addDoc } from "firebase/firestore";
 // import { db } from "../firebase"; // Assuming you have your Firebase configuration set up in a separate file named 'firebase.js'.
 import { useUserAuth } from "../UserContextProvider";
-
+import Logger from "../logger";
 
 function EventPage() {
   const [eventName, setEventName] = useState('');
@@ -33,7 +33,7 @@ function EventPage() {
       // Use Axios to make a POST request to your API endpoint
       const response = await axios.post(`${process.env.REACT_APP_API}/events/create`, formData);
   
-      // console.log('Event created successfully:', response.data);
+      // Logger.log('Event created successfully:', response.data);
       setEventName('');
       setEventDateTime('');
       setEventLocation('');
@@ -45,7 +45,7 @@ function EventPage() {
       }, 2000);
     } catch (error) {
       setIsLoading(false);
-      console.error('Error creating event: ', error);
+      Logger.error('Error creating event: ', error);
     }
   };
   

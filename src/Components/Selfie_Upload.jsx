@@ -4,6 +4,8 @@ import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
+import Logger from "../logger";
+
 
 function Selfie_Upload() {
   const { eventId} = useParams();
@@ -44,21 +46,21 @@ function Selfie_Upload() {
           },
         })
         .then(() => {
-          console.log("Upload successful"); // Add this line
+          Logger.log("Upload successful"); // Add this line
           setSelectedFiles([]); // Clear the selected files
           setUploadingStatus({
             uploading: false,
             success: true,
             error: null,
           });
-          console.log("Selected files cleared"); // Add this line
+          Logger.log("Selected files cleared"); // Add this line
 
           axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
             .then((response) => {
               setGalleryImages(response.data);
             })
             .catch((error) => {
-              console.error("Error fetching gallery images: ", error);
+              Logger.error("Error fetching gallery images: ", error);
               setUploadingStatus({
                 uploading: false,
                 success: false,
@@ -67,7 +69,7 @@ function Selfie_Upload() {
             });
         })
         .catch((error) => {
-          console.error("Error uploading files:", error);
+          Logger.error("Error uploading files:", error);
           alert("An error occurred while uploading files.");
         });
     }
@@ -79,7 +81,7 @@ function Selfie_Upload() {
         setGalleryImages(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching gallery images: ", error);
+        Logger.error("Error fetching gallery images: ", error);
       });
   }, [userId]);
 

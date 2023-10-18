@@ -4,15 +4,17 @@ import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
-import { useNavigate } from "react-router-dom";
 import DirectoryPoller from "./DirectoryPoller";
 import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
+import Logger from "../logger";
+import { useDirectoryPoller } from "../DirectoryPollerContext";
 
 function UploadFile() {
   const { eventId } = useParams();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [event, setEvent] = useState(null);
+  const [accessedEvent, setAccessedEvent] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
   const [showAllPhotos, setShowAllPhotos] = useState(true); // Add state for toggling between all photos and personal photos
   const [loading, setLoading] = useState(true); // Add loading state for fetching matched images
@@ -20,13 +22,15 @@ function UploadFile() {
   const { user } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
-  const navigate = useNavigate();
+  const {
+    setCurrentEventId,
+    showMonitorImages,
+    setShowMonitorImages,
+  } = useDirectoryPoller();
   const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
   const [isURLCopied, setIsURLCopied] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const [isPollerMinimized, setIsPollerMinimized] = useState(false);
-  const [showDirectoryPoller, setShowDirectoryPoller] = useState(false);
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
@@ -41,17 +45,18 @@ function UploadFile() {
 
   const galleryUrl = `${window.location.origin}/event/${eventId}`;
 
+  useEffect(() => {
+    // When the component mounts, set the currentEventId in your global state
+    setCurrentEventId(eventId);
+  }, [eventId, setCurrentEventId]);
+
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
-    setSelectedFiles(files);
-  };
-
-  const handleMinimizeClick = () => {
-    setIsPollerMinimized(!isPollerMinimized);
+    uploadFiles(files);
   };
 
   const toggleDirectoryPoller = () => {
-    setShowDirectoryPoller(!showDirectoryPoller);
+    setShowMonitorImages(!showMonitorImages);
   };
 
   const toggleQRModal = () => {
@@ -109,88 +114,103 @@ function UploadFile() {
           setShowDeleteToast(true);
         })
         .catch((error) => {
-          console.error("Error deleting image:", error);
+          Logger.error("Error deleting image:", error);
         });
     }
   };
 
-  const handleUploadButtonClick = () => {
-    const YOUR_MAX_SIZE = 5 * 1024 * 1024;
-    if (selectedFiles.length === 0) {
-      fileInputRef.current.click();
-    } else {
-      // Start the loading bar when uploading begins
-      setUploadingStatus({ uploading: true, success: false, error: null });
-
-      const uploadNextFile = (index) => {
-        if (index < selectedFiles.length) {
-          const file = selectedFiles[index];
-          if (file.size > YOUR_MAX_SIZE) {
-            // define YOUR_MAX_SIZE in bytes
-            setUploadingStatus({
-              uploading: false,
-              success: false,
-              error: "The image size is too big",
-            });
-            return;
-          }
-          const formData = new FormData();
-          formData.append("galleryImage", file);
-
-          axios
-            .post(
-              `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-              formData,
-              {
-                headers: {
-                  "Content-Type": "multipart/form-data",
-                },
-              }
-            )
-            .then(() => {
-              if (index === selectedFiles.length - 1) {
-                setSelectedFiles([]);
-                // Display success message
-                setUploadingStatus({
-                  uploading: false,
-                  success: true,
-                  error: null,
-                });
-              }
-              uploadNextFile(index + 1);
-            })
-            .catch((error) => {
-              console.error("Error uploading files:", error);
-              if (error.message === "Image already exists in the gallery.") {
-                setUploadingStatus({
-                  uploading: false,
-                  success: false,
-                  error: null,
-                  exists: true,
-                });
-              } else {
-                setUploadingStatus({
-                  uploading: false,
-                  success: false,
-                  error: "Image Already exists.",
-                  exists: false,
-                });
-              }
-              fileInputRef.current.value = "";
-              setSelectedFiles([]);
-            });
-          axios
-            .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
-            .then((response) => {
-              setGalleryImages(response.data);
-            })
-            .catch((error) => {
-              console.error("Error fetching gallery images: ", error);
-            });
-        }
-      };
-      uploadNextFile(0);
+  useEffect(() => {
+    if (selectedFiles.length > 0) {
+      uploadFiles(selectedFiles);
     }
+  }, [selectedFiles]);
+
+  const handleUploadButtonClick = () => {
+    if (selectedFiles.length === 0) {
+      fileInputRef.current.click(); // trigger the file input if no files are selected
+    }
+  };
+
+  const uploadFiles = (filesToUpload) => {
+    Logger.log("uploadFiles function called with:", filesToUpload);
+    if (filesToUpload.length === 0) {
+      Logger.log("No files to upload."); // And this
+      return;
+    } // if no files, just return
+
+    const YOUR_MAX_SIZE = 5 * 1024 * 1024;
+    // Start the loading bar when uploading begins
+    setUploadingStatus({ uploading: true, success: false, error: null });
+
+    const uploadNextFile = (index) => {
+      if (index < filesToUpload.length) {
+        const file = filesToUpload[index];
+        if (file.size > YOUR_MAX_SIZE) {
+          // define YOUR_MAX_SIZE in bytes
+          setUploadingStatus({
+            uploading: false,
+            success: false,
+            error: "The image size is too big",
+          });
+          return;
+        }
+        const formData = new FormData();
+        formData.append("galleryImage", file);
+
+        axios
+          .post(
+            `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          )
+          .then(() => {
+            if (index === filesToUpload.length - 1) {
+              setSelectedFiles([]);
+              // Display success message
+              setUploadingStatus({
+                uploading: false,
+                success: true,
+                error: null,
+              });
+            }
+            uploadNextFile(index + 1);
+          })
+          .catch((error) => {
+            Logger.error("Error uploading files:");
+            if (error.message === "Image already exists in the gallery.") {
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: null,
+                exists: true,
+              });
+              fileInputRef.current.value = null;
+            } else {
+              setUploadingStatus({
+                uploading: false,
+                success: false,
+                error: "Image Already exists.",
+                exists: false,
+              });
+              fileInputRef.current.value = null;
+            }
+            setSelectedFiles([]);
+          });
+        axios
+          .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+          .then((response) => {
+            setGalleryImages(response.data);
+          })
+          .catch((error) => {
+            Logger.error("Error fetching gallery images: ", error);
+          });
+      }
+    };
+    uploadNextFile(0);
   };
 
   const fetchMatchedImages = () => {
@@ -204,7 +224,7 @@ function UploadFile() {
         setLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching matched images:", error);
+        Logger.error("Error fetching matched images:", error);
         setLoading(false);
       });
   };
@@ -231,7 +251,7 @@ function UploadFile() {
         setEvent(selectedEvent);
       })
       .catch((error) => {
-        console.error("Error fetching event data: ", error);
+        Logger.error("Error fetching event data: ", error);
       });
 
     socketRef.current.on("new-image", (data) => {
@@ -242,26 +262,27 @@ function UploadFile() {
           setGalleryImages(response.data);
         })
         .catch((error) => {
-          console.error("Error fetching gallery images: ", error);
+          Logger.error("Error fetching gallery images: ", error);
         });
     });
-    axios.get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
-    .then(response => {
-        console.log(response.data);  // The array of events
-        // Find the current event using the eventId
-        const currentEvent = response.data.find(event => event.id === eventId);
-        setEvent(currentEvent);  // Set the current event as your state
-    })
-    .catch(error => {
-        console.error("Error fetching event details: ", error);
-    });
+    axios
+      .get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
+      .then((response) => {
+        const currentAccessedEvent = response.data.find(
+          (event) => event.id === eventId
+        );
+        setAccessedEvent(currentAccessedEvent);
+      })
+      .catch((error) => {
+        Logger.log("Error fetching accessed event details: ", error);
+      });
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
         setGalleryImages(response.data);
       })
       .catch((error) => {
-        console.error("Error fetching gallery images: ", error);
+        Logger.error("Error fetching gallery images: ", error);
       });
     axios
       .post(`${process.env.REACT_APP_API}/events/detect-face`, {
@@ -269,11 +290,11 @@ function UploadFile() {
         eventId: eventId,
       })
       .then((response) => {
-        console.log("Face detection completed:", response.data.message);
+        Logger.log("Face detection completed:", response.data.message);
         // Handle the response as needed
       })
-      .catch((error) => {
-        console.error("Error detecting face:", error);
+      .catch(() => {
+        Logger.log("Error detecting face:");
       });
     // Send a request to grant access based on the "access" query parameter
     axios
@@ -283,10 +304,10 @@ function UploadFile() {
       })
       .then(() => {
         // Access granted successfully
-        console.log("Access_Granted");
+        Logger.log("Access_Granted");
       })
       .catch((error) => {
-        console.error("Error granting access:", error);
+        Logger.log("Error granting access:");
       });
     return () => {
       if (socketRef.current) {
@@ -298,7 +319,7 @@ function UploadFile() {
   return (
     <Container>
       <CustomNavbar />
-      {event && (
+      {event ? (
         <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
           <Card.Img
             variant="top"
@@ -336,6 +357,48 @@ function UploadFile() {
             <button onClick={handleInviteButtonClick}>Invite</button>
           </Card.Body>
         </Card>
+      ) : accessedEvent ? (
+        <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
+          <Card.Img
+            variant="top"
+            src={accessedEvent.coverPhotoUrl}
+            style={{ width: "100%", height: "500px", objectFit: "cover" }}
+          />
+          <Card.Body
+            className="text-center"
+            style={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: "rgba(255, 255, 255, 0.2)",
+              borderBottomLeftRadius: "5px",
+              borderBottomRightRadius: "5px",
+              color: "white",
+              width: "100%",
+              maxWidth: "100vw",
+              boxSizing: "border-box",
+            }}
+          >
+            <Card.Title>{accessedEvent.eventName}</Card.Title>
+            <Card.Text>
+              Event Date/Time: {accessedEvent.eventDateTime}
+            </Card.Text>
+            <Card.Text>Location: {accessedEvent.eventLocation}</Card.Text>
+            <button onClick={() => setShowAllPhotos(true)}>All Photos</button>
+            <button
+              onClick={() => {
+                setShowAllPhotos(false);
+                fetchMatchedImages(); // Fetch matched images when the user clicks "Personal Gallery"
+              }}
+            >
+              Personal Gallery
+            </button>
+            <button onClick={handleInviteButtonClick}>Invite</button>
+          </Card.Body>
+        </Card>
+      ) : (
+        <p>Loading...</p> // or your preferred loading indicator
       )}
       {/* QR Code Modal */}
       <Modal show={showQRModal} onHide={toggleQRModal}>
@@ -415,22 +478,11 @@ function UploadFile() {
         >
           Directory Polling
         </Button>
-        <div
-          className={`directory-poller-container ${
-            showDirectoryPoller ? "active" : ""
-          } ${isPollerMinimized ? "minimized" : ""}`}
-        >
-          <div className="directory-poller-header">
-            <h5>Directory Polling</h5>
-            <button onClick={handleMinimizeClick}>
-              {isPollerMinimized ? "Maximize" : "Minimize"}
-            </button>
-            <button onClick={toggleDirectoryPoller}>Close</button>
-          </div>
-          <div className="directory-poller-content">
-            {showDirectoryPoller && <DirectoryPoller eventId={eventId} />}
-          </div>
-        </div>
+        <DirectoryPoller
+          show={showMonitorImages} // use showMonitorImages from context to control visibility
+          onHide={toggleDirectoryPoller}
+          eventId={eventId}
+        />
         <input
           ref={fileInputRef}
           type="file"
@@ -475,6 +527,7 @@ function UploadFile() {
           onHide={() => {
             setShowImageViewer(false);
             setSelectedImageType(null);
+            setShowMenu(false);
           }}
           centered
           size="lg"
@@ -512,8 +565,8 @@ function UploadFile() {
       )}
       <Toast
         style={{
-          position: "fixed",  // Change from "absolute" to "fixed"
-          bottom: 20,         // Change from "top" to "bottom"
+          position: "fixed", // Change from "absolute" to "fixed"
+          bottom: 20, // Change from "top" to "bottom"
           right: 20,
           zIndex: 1000,
         }}
@@ -560,46 +613,6 @@ function UploadFile() {
 
           .gallery-item:hover .gallery-img {
             transform: scale(1.05);
-          }
-
-          .directory-poller-container {
-            position: fixed;
-            bottom: 0;
-            right: 0;
-            width: 300px;
-            z-index: 1000;
-            max-height: 70vh;
-            overflow-y: auto;
-            display: none; /* Default to not display */
-            transform: translateY(100%);
-            background-color: #fff;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-            border-radius: 10px 10px 0 0;
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-          }
-
-          .directory-poller-container.active {
-            display: block; /* Display when active */
-            transform: translateY(0); /* Bring into view when active */
-        }
-
-          .directory-poller-container.minimized {
-            transform: translateY(calc(100% - 40px));
-          }
-
-          .directory-poller-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px;
-            background-color: #f5f5f5;
-            border-top-left-radius: 10px;
-            border-top-right-radius: 10px;
-          }
-
-          .directory-poller-content {
-            padding: 10px;
           }
 
           .delete-btn {

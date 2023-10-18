@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Navbar, Button } from "react-bootstrap";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaFolder } from "react-icons/fa"; // Importing Folder icon
 import { Link, useNavigate } from "react-router-dom";
 import { useUserAuth } from "../UserContextProvider";
+import { useDirectoryPoller } from "../DirectoryPollerContext"; // Assuming you have this hook from your context
 
 function CustomNavbar() {
   const [showDrawer, setShowDrawer] = useState(false);
@@ -10,22 +11,31 @@ function CustomNavbar() {
   const { user, logOut } = useUserAuth();
   const userId = user?.uid;
 
+  // Directory Poller state and functions from context
+  const {
+    isPollerRunning,
+    currentEventId,
+    setShowMonitorImages,
+  } = useDirectoryPoller();
+
   const toggleDrawer = () => {
     setShowDrawer(!showDrawer);
   };
 
   const handleLogOut = () => {
-    // Perform sign-out logic here (e.g., clearing authentication state)
-    // Then navigate to the signup component
-    // Example: clearAuthenticationState();
     logOut();
     navigate("/signup");
   };
 
   const handleSelfie = () => {
-
     navigate(`/selfie/${userId}`);
+  };
 
+  const handleDirectoryPollerClick = () => {
+    if (currentEventId) {
+      navigate(`/event/${currentEventId}`);
+      setShowMonitorImages(true);
+    }
   };
 
   const navItemsStyle = {
@@ -35,7 +45,7 @@ function CustomNavbar() {
 
   const userIconStyle = {
     cursor: "pointer",
-    marginLeft: "10px", // Adjust the margin as needed
+    marginLeft: "10px",
   };
 
   return (
@@ -43,6 +53,17 @@ function CustomNavbar() {
       <Navbar bg="light" expand="lg" className="justify-content-between">
         <Navbar.Brand href="/">Events</Navbar.Brand>
         <div style={navItemsStyle}>
+          {/* other navbar items */}
+          {currentEventId && ( // Only show the DirectoryPoller icon if there's an active event
+            <div
+              onClick={handleDirectoryPollerClick}
+              style={{ cursor: "pointer", marginRight: "15px" }}
+            >
+              <FaFolder color={isPollerRunning ? "green" : "grey"} size={24} />
+              {/* Display event name next to the icon */}
+              <span style={{ marginLeft: "8px" }}>{currentEventId}</span>
+            </div>
+          )}
           <Link to="/events" className="mr-3">
             <Button variant="primary" size="sm">
               Create Event
@@ -59,9 +80,7 @@ function CustomNavbar() {
           {/* Drawer content */}
           <div className="drawer-content">
             <h5>User Information</h5>
-            {user && (
-              <p>Phone: {user.phoneNumber}</p>
-            )}
+            {user && <p>Phone: {user.phoneNumber}</p>}
             {/* Display user information here */}
             <Button onClick={handleSelfie}>Take Selfie</Button>
             <Button onClick={handleLogOut}>Sign Out</Button>
