@@ -47,6 +47,12 @@ function Dashboard() {
     });
 
     // More socket event listeners can be added here as needed
+    socket.current.on('eventsData', (data) => {
+      // Check if the update is for the current user
+      if (data.userId === userId) {
+        setEvents(data.events);
+      }
+    });
 
     return () => {
       socket.current.disconnect();
