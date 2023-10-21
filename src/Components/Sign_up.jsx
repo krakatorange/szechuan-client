@@ -25,39 +25,36 @@ function SignUp() {
   const [isVerified, setIsVerified] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const userId = user?.uid;
-
+  
   useEffect(() => {
-    Logger.log("useEffect triggered");
-
     let timeoutId;
     if (isLoading) {
-        Logger.log("isLoading is true");
-        timeoutId = setTimeout(() => {
-            setIsLoading(false);
-            Logger.log("Timeout reached, checking savedEventUrl and user status");
+      timeoutId = setTimeout(() => {
+        setIsLoading(false);
 
+        if (user) { // Check if the user object exists after confirmation
+          const isNewUser = user.metadata.creationTime === user.metadata.lastSignInTime;
+
+          if (isNewUser) {
+            // If the user is new, redirect to the selfie page
+            navigate(`/${userId}/selfie`);
+          } else {
+            // If the user is not new, check for a saved event URL or redirect to the dashboard
             const savedEventUrl = getEventUrlFromCookie();
-            Logger.log("Retrieved savedEventUrl from cookie:", savedEventUrl);
-
             if (savedEventUrl) {
-                // If there's a saved event URL, redirect to it
-                Logger.log("Redirecting to savedEventUrl:", savedEventUrl);
-                navigate(savedEventUrl);
-            } else if (confirmOTP.user?.isNewUser) {
-                Logger.log("New user detected. Redirecting to selfie page.");
-                navigate(`/${userId}/selfie`);
+              navigate(savedEventUrl);
             } else {
-                Logger.log("Existing user detected. Redirecting to dashboard.");
-                navigate("/dashboard");
+              navigate("/dashboard");
             }
-        }, 4000);
+          }
+        }
+      }, 4000);
     }
-    return () => {
-        Logger.log("Cleaning up timeout");
-        clearTimeout(timeoutId);
-    };
-}, [isLoading, confirmOTP.user, userId, navigate]);
 
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isLoading, user, userId, navigate]);
 
 
 
