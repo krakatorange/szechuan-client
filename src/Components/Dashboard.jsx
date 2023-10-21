@@ -9,38 +9,33 @@ import { io } from "socket.io-client";
 
 function Dashboard() {
   const [events, setEvents] = useState([]);
-  const [accessedEvents, setAccessedEvents] = useState([]);
   const { user } = useUserAuth();
   const userId = user?.uid;
   const socket = useRef(null);
 
   const fetchEvents = useCallback(() => {
+    if (!userId) return; // Guard clause: if no userId, don't attempt to fetch
+
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
-        Logger.log("Fetched main events:", response.data);
+        Logger.log("Fetched events:", response.data);
         setEvents(response.data);
       })
       .catch((error) => {
-        Logger.error("Error fetching main events:", error);
-      });
-
-    axios
-      .get(`${process.env.REACT_APP_API}/events/getgallery/${userId}`)
-      .then((response) => {
-        Logger.log("Fetched accessed events:", response.data);
-        setAccessedEvents(response.data);
-      })
-      .catch((error) => {
-        Logger.error("Error fetching accessed events:", error);
+        Logger.error("Error fetching events:", error);
       });
   }, [userId]);
 
   useEffect(() => {
-    fetchEvents();
-  }, [fetchEvents]);
+    if (userId) {
+      fetchEvents();
+    }
+  }, [fetchEvents, userId]);
 
   useEffect(() => {
+    if (!userId) return; // Guard clause: if no userId, don't attempt to connect
+
     socket.current = io(process.env.REACT_APP_API);
 
     socket.current.on('event-created', (newEvent) => {
@@ -49,7 +44,6 @@ function Dashboard() {
 
     socket.current.on('event-deleted', (deletedEventId) => {
       setEvents(prevEvents => prevEvents.filter(event => event.id !== deletedEventId));
-      setAccessedEvents(prevEvents => prevEvents.filter(event => event.id !== deletedEventId));
     });
 
     // More socket event listeners can be added here as needed
@@ -57,7 +51,7 @@ function Dashboard() {
     return () => {
       socket.current.disconnect();
     };
-  }, []); // Empty dependency array ensures this effect runs only once
+  }, [userId]); // Depend on userId so this effect runs when userId is available
 
   const deleteEvent = useCallback(
     (eventId) => {
@@ -85,9 +79,6 @@ function Dashboard() {
           <div style={{ display: "grid" }}>
             {events.map((event) => (
               <NotificationBox key={event.id} event={event} onDelete={deleteEvent} />
-            ))}
-            {accessedEvents.map((accessedEvent) => (
-              <NotificationBox key={accessedEvent.id} event={accessedEvent} onDelete={deleteEvent} />
             ))}
           </div>
         </Card.Body>
