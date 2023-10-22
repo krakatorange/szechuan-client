@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Container, Button, Toast } from "react-bootstrap";
-import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
@@ -91,9 +90,13 @@ function Selfie_Upload() {
       });
   }, [userId]);
 
+  const containerStyle = {
+    maxWidth: '90%', // allows the container to expand fully on all screen sizes
+    padding: '0 15px', // maintains a small padding on the sides
+  };
+
   return (
-    <Container>
-      <CustomNavbar />
+    <Container style={containerStyle}>
       <div className="d-flex justify-content-end mt-3">
         <Button
           variant="primary"

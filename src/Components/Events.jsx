@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Container, Form, Button } from "react-bootstrap";
 import axios from 'axios';
-import CustomNavbar from "./CustomNavbar";
 import { useNavigate } from "react-router-dom";
 // import { collection, addDoc } from "firebase/firestore";
 // import { db } from "../firebase"; // Assuming you have your Firebase configuration set up in a separate file named 'firebase.js'.
@@ -53,9 +52,13 @@ function EventPage() {
   };
   
 
+  const containerStyle = {
+    maxWidth: '90%', // allows the container to expand fully on all screen sizes
+    padding: '0 15px', // maintains a small padding on the sides
+  };
+
   return (
-    <Container>
-      <CustomNavbar/>
+    <Container style={containerStyle}>
       <div className="d-flex justify-content-center align-items-center form-container">
         <div className="vertical-form">
           <h2>Enter New Event Information</h2>
