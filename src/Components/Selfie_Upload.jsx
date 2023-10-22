@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Container, Button, Toast } from "react-bootstrap";
 import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
@@ -6,13 +6,12 @@ import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import Logger from "../logger";
 
-
 function Selfie_Upload() {
-  const { eventId} = useParams();
+  const { eventId } = useParams();
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [event, setEvent] = useState(null);
   const [galleryImages, setGalleryImages] = useState([]);
-  const {user} = useUserAuth();
+  const { user } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const [uploadingStatus, setUploadingStatus] = useState({
@@ -23,55 +22,62 @@ function Selfie_Upload() {
 
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
-    setSelectedFiles(files);
+    if (files.length > 0) {
+      uploadFiles(files); // Directly call the uploadFiles function when files are selected
+    }
+  };
+
+  const uploadFiles = (files) => {
+    setUploadingStatus({ uploading: true, success: false, error: null });
+
+    // Create a FormData object to send files to the server
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('selfieImage', file);
+    });
+
+    // Send a POST request to the server to upload files
+    axios.post(`${process.env.REACT_APP_API}/events/${userId}/selfie`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    })
+    .then(() => {
+      Logger.log("Upload successful");
+      setSelectedFiles([]); // Clear the selected files
+      setUploadingStatus({
+        uploading: false,
+        success: true,
+        error: null,
+      });
+
+      // Fetch the updated gallery images
+      axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
+        .then((response) => {
+          setGalleryImages(response.data);
+        })
+        .catch((error) => {
+          Logger.error("Error fetching gallery images: ", error);
+          setUploadingStatus({
+            uploading: false,
+            success: false,
+            error: "An error occurred while uploading files.",
+          });
+        });
+    })
+    .catch((error) => {
+      Logger.error("Error uploading files:", error);
+      setUploadingStatus({
+        uploading: false,
+        success: false,
+        error: "An error occurred while uploading files.",
+      });
+    });
   };
 
   const handleUploadButtonClick = () => {
-    // Check if any files are selected
-    if (selectedFiles.length === 0) {
-      // Open the file dialog for regular file uploads
+    if (fileInputRef.current && fileInputRef.current.files.length === 0) {
       fileInputRef.current.click();
-    } else {
-      setUploadingStatus({ uploading: true, success: false, error: null });
-      // Create a FormData object to send files to the server
-      const formData = new FormData();
-      selectedFiles.forEach((file) => {
-        formData.append(`selfieImage`, file);
-      });
-
-      // Send a POST request to the server to upload files
-      axios.post(`${process.env.REACT_APP_API}/events/${userId}/selfie`, formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        })
-        .then(() => {
-          Logger.log("Upload successful"); // Add this line
-          setSelectedFiles([]); // Clear the selected files
-          setUploadingStatus({
-            uploading: false,
-            success: true,
-            error: null,
-          });
-          Logger.log("Selected files cleared"); // Add this line
-
-          axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
-            .then((response) => {
-              setGalleryImages(response.data);
-            })
-            .catch((error) => {
-              Logger.error("Error fetching gallery images: ", error);
-              setUploadingStatus({
-                uploading: false,
-                success: false,
-                error: "An error occurred while uploading files.",
-              });
-            });
-        })
-        .catch((error) => {
-          Logger.error("Error uploading files:", error);
-          alert("An error occurred while uploading files.");
-        });
     }
   };
 
@@ -91,7 +97,7 @@ function Selfie_Upload() {
       <div className="d-flex justify-content-end mt-3">
         <Button
           variant="primary"
-          onClick={handleUploadButtonClick}
+          onClick={handleUploadButtonClick} // keep the onClick handler here
           style={{ borderRadius: "20px" }}
         >
           Upload Image
@@ -130,10 +136,10 @@ function Selfie_Upload() {
         <input
           ref={fileInputRef}
           type="file"
-          name="galleryImage"
+          name="selfieImage"
           multiple
           style={{ display: "none" }}
-          onChange={handleFileInputChange}
+          onChange={handleFileInputChange} // the onChange handler should stay here
         />
       </div>
       <div className="gallery mt-4">

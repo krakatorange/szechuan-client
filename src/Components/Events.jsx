@@ -39,10 +39,8 @@ function EventPage() {
       setEventLocation('');
       setCoverPhoto(null);
   
-      setTimeout(() => {
-        setIsLoading(false); // Set isLoading to false
-        navigate("/dashboard");
-      }, 2000);
+      setIsLoading(false); // Set isLoading to false
+      navigate("/dashboard");
     } catch (error) {
       setIsLoading(false);
       Logger.error('Error creating event: ', error);

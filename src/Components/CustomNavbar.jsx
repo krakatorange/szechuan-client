@@ -3,7 +3,8 @@ import { Navbar, Button } from "react-bootstrap";
 import { FaUserCircle, FaFolder } from "react-icons/fa"; // Importing Folder icon
 import { Link, useNavigate } from "react-router-dom";
 import { useUserAuth } from "../UserContextProvider";
-import { useDirectoryPoller } from "../DirectoryPollerContext"; // Assuming you have this hook from your context
+import { useDirectoryPoller } from "../DirectoryPollerContext";
+
 
 function CustomNavbar() {
   const [showDrawer, setShowDrawer] = useState(false);
@@ -51,7 +52,7 @@ function CustomNavbar() {
   return (
     <div>
       <Navbar bg="light" expand="lg" className="justify-content-between">
-        <Navbar.Brand href="/">Events</Navbar.Brand>
+      <Link to="/" className="navbar-brand">Events</Link>
         <div style={navItemsStyle}>
           {/* other navbar items */}
           {currentEventId && ( // Only show the DirectoryPoller icon if there's an active event
