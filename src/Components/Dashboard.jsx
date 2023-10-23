@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Container, Card } from "react-bootstrap";
-import CustomNavbar from "./CustomNavbar";
 import NotificationBox from "./NotificationBox";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
@@ -74,9 +73,13 @@ function Dashboard() {
     [fetchEvents]
   );
 
+  const containerStyle = {
+    maxWidth: '90%', // allows the container to expand fully on all screen sizes
+    padding: '0 15px', // maintains a small padding on the sides
+  };
+
   return (
-    <Container>
-      <CustomNavbar />
+    <Container style={containerStyle}>
       <h1 className="mt-4">Dashboard</h1>
       <Card className="mt-4">
         <Card.Body>

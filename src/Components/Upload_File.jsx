@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Container, Button, Card, Modal, Toast } from "react-bootstrap";
-import CustomNavbar from "./CustomNavbar";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
@@ -304,9 +303,13 @@ function UploadFile() {
     };
   }, [eventId, userId]);
 
+  const containerStyle = {
+    maxWidth: '90%', // allows the container to expand fully on all screen sizes
+    padding: '0 15px', // maintains a small padding on the sides
+  };
+
   return (
-    <Container>
-      <CustomNavbar />
+    <Container style={containerStyle}>
       {event ? (
         <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
           <Card.Img
