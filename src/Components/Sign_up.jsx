@@ -37,7 +37,7 @@ function SignUp() {
 
           if (isNewUser) {
             // If the user is new, redirect to the selfie page
-            navigate(`/${userId}/selfie`);
+            navigate(`/selfie/${userId}`);
           } else {
             // If the user is not new, check for a saved event URL or redirect to the dashboard
             const savedEventUrl = getEventUrlFromCookie();

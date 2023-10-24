@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Container, Button, Toast } from "react-bootstrap";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
 import Logger from "../logger";
+import { getEventUrlFromCookie } from "../eventCookieHandler";
 
 function Selfie_Upload() {
   const { eventId } = useParams();
@@ -13,6 +14,7 @@ function Selfie_Upload() {
   const { user } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const navigate = useNavigate();
   const [uploadingStatus, setUploadingStatus] = useState({
     uploading: false,
     success: false,
@@ -49,6 +51,16 @@ function Selfie_Upload() {
         success: true,
         error: null,
       });
+
+       // Check if there's an event URL saved in the cookies
+       const savedEventUrl = getEventUrlFromCookie();
+       if (savedEventUrl) {
+         // If there's a saved event URL, navigate to that URL
+         navigate(savedEventUrl);
+       } else {
+         // If there's no saved event URL, navigate to the dashboard or any other default page
+         navigate('/dashboard');
+       }
 
       // Fetch the updated gallery images
       axios.get(`${process.env.REACT_APP_API}/events/getselfie/${userId}`)
