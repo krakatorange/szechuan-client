@@ -78,6 +78,17 @@ function Dashboard() {
     padding: '0 15px', // maintains a small padding on the sides
   };
 
+  const notificationContainerStyle = {
+    display: 'flex', // creates a flex container
+    flexWrap: 'wrap', // allows the items to wrap to the next line
+    gap: '10px', // optional: adds a gap between items
+  };
+
+  const notificationBoxStyle = {
+    flex: '1 0 21%', // allows the item to grow and shrink but bases the calculations on 21% of the container width
+    // maxWidth: '21%', // limits the maximum width of the item
+  };
+
   return (
     <Container style={containerStyle}>
       <h1 className="mt-4">Dashboard</h1>
@@ -85,9 +96,9 @@ function Dashboard() {
         <Card.Body>
           <h5>You are all checked in!</h5>
           <p>You'll get a text when photos from your event are uploaded.</p>
-          <div style={{ display: "grid" }}>
+          <div style={notificationContainerStyle}>
             {events.map((event) => (
-              <NotificationBox key={event.id} event={event} onDelete={deleteEvent} />
+              <NotificationBox key={event.id} event={event} onDelete={deleteEvent} style={notificationBoxStyle} />
             ))}
           </div>
         </Card.Body>

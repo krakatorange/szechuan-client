@@ -4,14 +4,14 @@
  * Sets a cookie.
  * @param {string} name - Cookie name
  * @param {string} value - Cookie value
- * @param {number} days - Duration for the cookie in days
+ * @param {number} minutes - Duration for the cookie in minutes
  */
-function setCookie(name, value, days) {
-    const date = new Date();
-    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-    const expires = "expires=" + date.toUTCString();
-    document.cookie = name + "=" + value + ";" + expires + ";path=/";
-  }
+function setCookie(name, value, minutes) {
+  const date = new Date();
+  date.setTime(date.getTime() + (minutes * 60 * 1000)); // Convert minutes to milliseconds
+  const expires = "expires=" + date.toUTCString();
+  document.cookie = name + "=" + value + ";" + expires + ";path=/";
+}
   
   /**
    * Returns a cookie value by name.
@@ -30,7 +30,7 @@ function setCookie(name, value, days) {
    * @param {string} url - Event URL
    */
   export function saveEventUrlInCookie(url) {
-    setCookie("eventUrl", url, 1);
+    setCookie("eventUrl", url, 5);
   }
   
   /**
