@@ -24,6 +24,7 @@ function UploadFile() {
     setCurrentEventId,
     showMonitorImages,
     setShowMonitorImages,
+    setEventName,
   } = useDirectoryPoller();
   const socketRef = useRef(null);
   const [galleryURL, setGalleryURL] = useState("");
@@ -250,6 +251,8 @@ function UploadFile() {
       .then((response) => {
         const currentEvent = response.data.find((event) => event.id === eventId);
         setEvent(currentEvent);
+
+        setEventName(currentEvent.eventName); 
       })
       .catch((error) => {
         Logger.error("Error fetching event details: ", error);
