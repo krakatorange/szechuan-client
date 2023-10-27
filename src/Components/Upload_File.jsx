@@ -240,7 +240,11 @@ function UploadFile() {
   useEffect(() => {
     if(!userId || !eventId) return;
     socketRef.current = io.connect(process.env.REACT_APP_API);
-    
+    socketRef.current.on("access-granted", (data) => {
+      // Handle the event data here
+      Logger.log("Access granted to user:", data.userId, "for event:", data.eventId, "with gallery URL:", data.galleryUrl);
+      // You can also update the state or perform other operations based on the event data
+    });
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
