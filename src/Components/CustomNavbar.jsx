@@ -10,7 +10,7 @@ function CustomNavbar() {
   const navigate = useNavigate();
   const { user, logOut } = useUserAuth();
   const userId = user?.uid;
-  const { isPollerRunning, currentEventId, setShowMonitorImages } = useDirectoryPoller();
+  const { isPollerRunning,  eventName, currentEventId, setShowMonitorImages } = useDirectoryPoller();
   const userIconRef = useRef(null); // Ref for the user icon
   const [drawerStyle, setDrawerStyle] = useState({});
 
@@ -127,10 +127,10 @@ function CustomNavbar() {
       <Navbar expand="lg" style={styles.navbar} className="justify-content-between">
         <Link to="/" style={styles.brand} className="navbar-brand">Events</Link>
         <div style={styles.navItems}>
-          {currentEventId && (
+        {isPollerRunning && eventName && (
             <div onClick={handleDirectoryPollerClick} style={styles.directory}>
-              <FaFolder color={isPollerRunning ? "green" : "#40a5f3"} size={24} />
-              <span style={styles.eventId}>{currentEventId}</span>
+              <FaFolder color="green" size={24} />
+              <span style={styles.eventId}>{eventName}</span>
             </div>
           )}
           <Link to="/events" className="mr-3">

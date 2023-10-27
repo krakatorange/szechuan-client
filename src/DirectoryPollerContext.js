@@ -8,6 +8,7 @@ export const DirectoryPollerProvider = ({ children }) => {
   const [isPollerRunning, setIsPollerRunning] = useState(false);
   const [isPollerMinimized, setIsPollerMinimized] = useState(false);
   const [currentEventId, setCurrentEventId] = useState(null);
+  const [eventName, setEventName] = useState("");
   const [url, setUrl] = useState("");
   const [newImages, setNewImages] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
@@ -33,6 +34,8 @@ export const DirectoryPollerProvider = ({ children }) => {
         setIsUploading,
         showMonitorImages,
         setShowMonitorImages,
+        eventName,
+        setEventName,
       }}
     >
       {children}

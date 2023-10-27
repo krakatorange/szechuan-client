@@ -1,0 +1,51 @@
+
+  
+  /* Additional styles for responsiveness will be added after reviewing the image and understanding the layout adjustments. */
+  
+  /* General styles */
+  .dashboard-container {
+    max-width: 100%;
+    padding: 0 15px;
+    margin: 0 auto;
+  }
+  
+  /* Notification container styles */
+  .notification-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  
+  /* Notification box styles */
+  .notification-box {
+    flex: 1 0 46%;
+    max-width: 46%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+  }
+  
+  .dashboard-card {
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dashboard-button {
+    margin-top: 20px;
+    width: 100%;
+  }
+  
+  /* Responsive styles */
+  @media (max-width: 768px) {
+    .notification-box {
+      flex: 1 0 48%;
+      max-width: 48%;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .notification-box {
+      flex: 1 0 100%;
+      max-width: 100%;
+    }
+  }
