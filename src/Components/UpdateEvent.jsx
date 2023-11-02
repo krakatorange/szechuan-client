@@ -123,13 +123,6 @@ function EditEvent({eventId, onEventUpdated}) {
             <Button type="submit" variant="primary" className="mt-3">
               Update Event
             </Button>
-            <Button
-              variant="secondary"
-              className="mt-3 ml-2"
-              onClick={handleExit}
-            >
-              Cancel
-            </Button>
           </Form>
         </div>
       </div>

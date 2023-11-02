@@ -2,8 +2,7 @@ import React, { useState } from "react";
 import { Container, Form, Button } from "react-bootstrap";
 import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-// import { collection, addDoc } from "firebase/firestore";
-// import { db } from "../firebase"; // Assuming you have your Firebase configuration set up in a separate file named 'firebase.js'.
+import './css/createEvent.css'
 import { useUserAuth } from "../UserContextProvider";
 import Logger from "../logger";
 
@@ -58,8 +57,8 @@ function EventPage() {
   };
 
   return (
-    <Container style={containerStyle}>
-      <div className="d-flex justify-content-center align-items-center form-container">
+    <Container>
+      <div className="form-container">
         <div className="vertical-form">
           <h2>Enter New Event Information</h2>
           <Form onSubmit={handleSubmit}>
@@ -103,8 +102,7 @@ function EventPage() {
                   <img
                     src={URL.createObjectURL(coverPhoto)}
                     alt="Cover"
-                    className="ml-3"
-                    style={{ maxWidth: "100px", maxHeight: "100px" }}
+                    className="image-preview"
                   />
                 )}
               </div>
@@ -112,27 +110,15 @@ function EventPage() {
 
             <Button type="submit" variant="primary" className="mt-3">
               Create Event
-              {isLoading && ( // Display loading overlay if isLoading is true
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      backgroundColor: "rgba(255, 255, 255, 0.8)", // Semi-transparent white background
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                    }}
-                  >
-                    <div className="spinner-border text-primary" role="status">
-                      <span className="visually-hidden">Loading...</span>
-                    </div>
+              {isLoading && (
+                <div className="loading-overlay">
+                  <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
                   </div>
+                </div>
               )}
             </Button>
-            <Button variant="secondary" className="mt-3" style={{marginLeft: '10px'}} onClick={handleExit}>
+            <Button variant="secondary" className="mt-3 btn-secondary" onClick={handleExit}>
               Exit
             </Button>
           </Form>

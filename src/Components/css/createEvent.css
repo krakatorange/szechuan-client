@@ -1,0 +1,63 @@
+.form-container {
+    max-width: 500px; /* Set a max-width for the form for larger screens */
+    margin: auto; /* This will center the form on the page */
+    padding: 20px; /* Add some padding inside the form container */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a subtle shadow to the form container */
+    background-color: #ffffff; /* Set the background color to white or any other color */
+    border-radius: 8px; /* Optional: Rounds the corners of the form container */
+  }
+  
+  .vertical-form {
+    display: flex;
+    flex-direction: column; /* Make the form items align vertically */
+  }
+  
+  .vertical-form .form-group {
+    margin-bottom: 15px; /* Add some space between form groups */
+  }
+  
+  .vertical-form .form-label {
+    font-weight: bold; /* Make the label texts bold */
+    margin-bottom: 5px; /* Add some space below the label */
+  }
+  
+  .vertical-form .form-control {
+    padding: 10px; /* Increase the padding inside the form inputs */
+    border-radius: 5px; /* Optional: Rounds the corners of the input fields */
+  }
+  
+  .vertical-form .btn-primary {
+    background-color: #40a5f3; /* Set the color for the primary button */
+    border-color: #40a5f3; /* Set the border color for the primary button */
+  }
+  
+  .vertical-form .btn-secondary {
+    margin-left: 10px; /* Add some space to the left of the secondary button */
+  }
+  
+  /* Add responsive behavior to the form */
+  @media (max-width: 576px) {
+    .form-container {
+      max-width: 100%; /* Allow the form to expand fully on small screens */
+      padding: 10px; /* Reduce padding on smaller screens */
+    }
+  }
+  
+  .image-preview {
+    max-width: 100px; /* Limit the width of the image preview */
+    max-height: 100px; /* Limit the height of the image preview */
+    margin-left: 10px; /* Add some space to the left of the image preview */
+  }
+  
+  .loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  
