@@ -3,9 +3,9 @@ import { Container, Card } from "react-bootstrap";
 import NotificationBox from "./NotificationBox";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
-import Logger from '../logger';
+import Logger from "../logger";
 import { io } from "socket.io-client";
-import './css/dashboard.css';
+import "./css/dashboard.css";
 
 function Dashboard() {
   const [events, setEvents] = useState([]);
@@ -38,16 +38,18 @@ function Dashboard() {
 
     socket.current = io(process.env.REACT_APP_API);
 
-    socket.current.on('event-created', (newEvent) => {
-      setEvents(prevEvents => [...prevEvents, newEvent]);
+    socket.current.on("event-created", (newEvent) => {
+      setEvents((prevEvents) => [...prevEvents, newEvent]);
     });
 
-    socket.current.on('event-deleted', (deletedEventId) => {
-      setEvents(prevEvents => prevEvents.filter(event => event.id !== deletedEventId));
+    socket.current.on("event-deleted", (deletedEventId) => {
+      setEvents((prevEvents) =>
+        prevEvents.filter((event) => event.id !== deletedEventId)
+      );
     });
 
     // More socket event listeners can be added here as needed
-    socket.current.on('eventsData', (data) => {
+    socket.current.on("eventsData", (data) => {
       // Check if the update is for the current user
       if (data.userId === userId) {
         setEvents(data.events);
@@ -57,7 +59,14 @@ function Dashboard() {
     return () => {
       socket.current.disconnect();
     };
-  }, [userId]); // Depend on userId so this effect runs when userId is available
+  }, [userId]);
+
+  const onEventUpdated = useCallback(() => {
+    // Instead of trying to update the state directly,
+    // call fetchEvents to refresh the event list from the server.
+    fetchEvents();
+  }, [fetchEvents]);
+  
 
   const deleteEvent = useCallback(
     (eventId) => {
@@ -65,7 +74,7 @@ function Dashboard() {
         .delete(`${process.env.REACT_APP_API}/events/event/${eventId}`)
         .then((response) => {
           Logger.log("Event deleted successfully:", response.data);
-          fetchEvents();  // refetch the events after deleting
+          fetchEvents(); // refetch the events after deleting
         })
         .catch((error) => {
           Logger.error("Error deleting event:", error);
@@ -83,7 +92,13 @@ function Dashboard() {
           <p>You'll get a text when photos from your event are uploaded.</p>
           <div className="notification-container">
             {events.map((event) => (
-              <NotificationBox key={event.id} event={event} onDelete={deleteEvent} className="notification-box" />
+              <NotificationBox
+                key={event.id}
+                event={event}
+                onDelete={deleteEvent}
+                onEventUpdated={onEventUpdated}
+                className="notification-box"
+              />
             ))}
           </div>
         </Card.Body>

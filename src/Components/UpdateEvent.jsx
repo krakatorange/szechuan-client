@@ -1,66 +1,78 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container, Form, Button } from "react-bootstrap";
-import axios from 'axios';
-import { useNavigate } from "react-router-dom";
-import './css/createEvent.css'
+import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
 import { useUserAuth } from "../UserContextProvider";
 import Logger from "../logger";
+import { io } from "socket.io-client";
 
-function EventPage() {
-  const [eventName, setEventName] = useState('');
-  const [eventDateTime, setEventDateTime] = useState('');
-  const [eventLocation, setEventLocation] = useState('');
+const socket = io(process.env.REACT_APP_API);
+
+function EditEvent({eventId, onEventUpdated}) {
+  const [currentEvent, setCurrentEvent] = useState(null);
+  const [eventName, setEventName] = useState("");
+  const [eventDateTime, setEventDateTime] = useState("");
+  const [eventLocation, setEventLocation] = useState("");
   const [coverPhoto, setCoverPhoto] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const {user} = useUserAuth();
+  const { user } = useUserAuth();
   const navigate = useNavigate();
-  const userId = user?.uid
+  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     try {
       setIsLoading(true);
       const formData = new FormData();
-      formData.append('eventName', eventName);
-      formData.append('eventDateTime', eventDateTime);
-      formData.append('eventLocation', eventLocation);
-      formData.append('coverPhoto', coverPhoto);
-      formData.append('creatorId', userId);
-  
-      // Use Axios to make a POST request to your API endpoint
-      const response = await axios.post(`${process.env.REACT_APP_API}/events/create`, formData);
-  
-      // Logger.log('Event created successfully:', response.data);
-      setEventName('');
-      setEventDateTime('');
-      setEventLocation('');
-      setCoverPhoto(null);
-  
-      setIsLoading(false); // Set isLoading to false
-      navigate("/dashboard");
+      formData.append("eventName", eventName);
+      formData.append("eventDateTime", eventDateTime);
+      formData.append("eventLocation", eventLocation);
+      if (coverPhoto) {
+        formData.append("coverPhoto", coverPhoto);
+      }
+
+      const response = await axios.patch(
+        `${process.env.REACT_APP_API}/events/${eventId}/edit`,
+        formData
+      );
+      Logger.log("Event updated successfully:", response.data);
+
+      // Emit an event-updated event to the server
+      socket.emit("event-updated", response.data);
+
+      // If you want to navigate back to the dashboard after the update
+      // navigate("/dashboard");
+      onEventUpdated(response.data);
     } catch (error) {
+      Logger.error("Error updating event: ", error);
+    } finally {
       setIsLoading(false);
-      Logger.error('Error creating event: ', error);
     }
   };
-  
-  
+
   const handleExit = () => {
     navigate("/dashboard");
   };
-  
 
-  const containerStyle = {
-    maxWidth: '90%', // allows the container to expand fully on all screen sizes
-    padding: '0 15px', // maintains a small padding on the sides
+  const handleCoverPhotoChange = (e) => {
+    setCoverPhoto(e.target.files[0]);
   };
 
+  const containerStyle = {
+    maxWidth: "90%",
+    padding: "0 15px",
+  };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
   return (
-    <Container>
-      <div className="form-container">
+    <Container style={containerStyle}>
+      <div className="d-flex justify-content-center align-items-center form-container">
         <div className="vertical-form">
-          <h2>Enter New Event Information</h2>
+          <h2>Edit Event Information</h2>
           <Form onSubmit={handleSubmit}>
             <Form.Group controlId="eventName">
               <Form.Label>Name</Form.Label>
@@ -95,31 +107,21 @@ function EventPage() {
                 <input
                   type="file"
                   accept="image/*"
-                  name="coverPhoto" 
+                  name="coverPhoto"
                   onChange={(e) => setCoverPhoto(e.target.files[0])}
                 />
                 {coverPhoto && (
                   <img
                     src={URL.createObjectURL(coverPhoto)}
                     alt="Cover"
-                    className="image-preview"
+                    className="ml-3"
+                    style={{ maxWidth: "100px", maxHeight: "100px" }}
                   />
                 )}
               </div>
             </Form.Group>
-
             <Button type="submit" variant="primary" className="mt-3">
-              Create Event
-              {isLoading && (
-                <div className="loading-overlay">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Loading...</span>
-                  </div>
-                </div>
-              )}
-            </Button>
-            <Button variant="secondary" className="mt-3 btn-secondary" onClick={handleExit}>
-              Exit
+              Update Event
             </Button>
           </Form>
         </div>
@@ -128,4 +130,4 @@ function EventPage() {
   );
 }
 
-export default EventPage;
+export default EditEvent;
