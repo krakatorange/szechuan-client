@@ -118,11 +118,11 @@
   }
 
   .card-img-container {
-    height: 300px;
+    height: 380px;
   }
 
   .event-details-overlay {
-    padding: 5px; /* Adjusted padding for mobile */
-    bottom: -5px;
+    padding: 2px; /* Adjusted padding for mobile */
+    bottom:  5px;
   }
 }

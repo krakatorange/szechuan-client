@@ -5,10 +5,11 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useUserAuth } from "../UserContextProvider";
 import Logger from "../logger";
 import { io } from "socket.io-client";
+import "./css/createEvent.css";
 
 const socket = io(process.env.REACT_APP_API);
 
-function EditEvent({eventId, onEventUpdated}) {
+function EditEvent({ eventId, onEventUpdated }) {
   const [currentEvent, setCurrentEvent] = useState(null);
   const [eventName, setEventName] = useState("");
   const [eventDateTime, setEventDateTime] = useState("");
@@ -17,7 +18,6 @@ function EditEvent({eventId, onEventUpdated}) {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useUserAuth();
   const navigate = useNavigate();
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,6 +107,7 @@ function EditEvent({eventId, onEventUpdated}) {
                 <input
                   type="file"
                   accept="image/*"
+                  className="file-input"
                   name="coverPhoto"
                   onChange={(e) => setCoverPhoto(e.target.files[0])}
                 />
@@ -114,8 +115,7 @@ function EditEvent({eventId, onEventUpdated}) {
                   <img
                     src={URL.createObjectURL(coverPhoto)}
                     alt="Cover"
-                    className="ml-3"
-                    style={{ maxWidth: "100px", maxHeight: "100px" }}
+                    className="image-preview"
                   />
                 )}
               </div>

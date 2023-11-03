@@ -34,12 +34,23 @@
   .vertical-form .btn-secondary {
     margin-left: 10px; /* Add some space to the left of the secondary button */
   }
-  
+  .file-input {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   /* Add responsive behavior to the form */
   @media (max-width: 576px) {
     .form-container {
       max-width: 100%; /* Allow the form to expand fully on small screens */
       padding: 10px; /* Reduce padding on smaller screens */
+    }
+
+    .file-input {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100px; /* Adjust as needed */
     }
   }
   

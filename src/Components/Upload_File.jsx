@@ -239,14 +239,17 @@ function UploadFile() {
   };
 
   useEffect(() => {
-    if(!userId || !eventId) return;
+    if (!userId || !eventId) return;
     socketRef.current = io.connect(process.env.REACT_APP_API);
     socketRef.current.on("access-granted", (data) => {
       if (data.userId === userId) {
         // Fetch event details using Axios
-        axios.get(`${process.env.REACT_APP_API}/events/all/${userId}`)
+        axios
+          .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
           .then((response) => {
-            const currentEvent = response.data.find((event) => event.id === eventId);
+            const currentEvent = response.data.find(
+              (event) => event.id === eventId
+            );
             if (currentEvent) {
               setEvent(currentEvent);
               setEventName(currentEvent.eventName);
@@ -260,10 +263,12 @@ function UploadFile() {
     axios
       .get(`${process.env.REACT_APP_API}/events/all/${userId}`)
       .then((response) => {
-        const currentEvent = response.data.find((event) => event.id === eventId);
+        const currentEvent = response.data.find(
+          (event) => event.id === eventId
+        );
         setEvent(currentEvent);
 
-        setEventName(currentEvent.eventName); 
+        setEventName(currentEvent.eventName);
       })
       .catch((error) => {
         Logger.error("Error fetching event details: ", error);
@@ -322,8 +327,8 @@ function UploadFile() {
   }, [eventId, userId]);
 
   const containerStyle = {
-    maxWidth: '90%', // allows the container to expand fully on all screen sizes
-    padding: '0 15px', // maintains a small padding on the sides
+    maxWidth: "90%", // allows the container to expand fully on all screen sizes
+    padding: "0 15px", // maintains a small padding on the sides
   };
 
   return (
@@ -354,16 +359,24 @@ function UploadFile() {
             <Card.Title>{event.eventName}</Card.Title>
             <Card.Text>Event Date/Time: {event.eventDateTime}</Card.Text>
             <Card.Text>Location: {event.eventLocation}</Card.Text>
-            <button onClick={() => setShowAllPhotos(true)}>All Photos</button>
+            <button
+              onClick={() => setShowAllPhotos(true)}
+              className="custom-button"
+            >
+              All Photos
+            </button>
             <button
               onClick={() => {
                 setShowAllPhotos(false);
                 fetchMatchedImages(); // Fetch matched images when the user clicks "Personal Gallery"
               }}
+              className="custom-button"
             >
               Personal Gallery
             </button>
-            <button onClick={handleInviteButtonClick}>Invite</button>
+            <button onClick={handleInviteButtonClick} className="custom-button">
+              Invite
+            </button>
           </Card.Body>
         </Card>
       ) : (
@@ -656,7 +669,38 @@ function UploadFile() {
           
           .blurred-backdrop {
             backdrop-filter: blur(5px);
-          }          
+          } 
+          
+          .custom-button {
+            margin: 0 10px;
+            background-color: #40a5f3;
+            color: white;
+            opacity: 0.8;
+            border: none;
+            border-radius: 4px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+          }
+          
+          .custom-button:hover {
+            opacity: 1;
+          }
+
+          @media (max-width: 767px) {
+            .custom-button {
+              margin: 5px; /* smaller margins for mobile */
+              padding: 5px 10px; /* smaller padding for mobile */
+              font-size: 0.8rem; /* smaller font size for mobile */
+            }
+      
+            .button-container {
+              display: flex;
+              flex-direction: row; /* ensures buttons are in a horizontal line */
+              justify-content: space-around; /* evenly spaces buttons across the available width */
+              padding: 10px 0; /* adds some padding at the top and bottom */
+            }
+          }
           
         `}
       </style>
