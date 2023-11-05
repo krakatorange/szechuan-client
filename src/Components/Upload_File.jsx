@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Container, Button, Card, Modal, Toast } from "react-bootstrap";
+import {
+  Container,
+  Button,
+  Card,
+  Modal,
+  Toast,
+  Carousel,
+} from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
@@ -327,14 +334,15 @@ function UploadFile() {
   }, [eventId, userId]);
 
   const containerStyle = {
-    maxWidth: "90%", // allows the container to expand fully on all screen sizes
-    padding: "0 15px", // maintains a small padding on the sides
+    maxWidth: "100%", // allows the container to expand fully on all screen sizes
+    padding: "0", // maintains a small padding on the sides
+    margin: '0'
   };
 
   return (
     <Container style={containerStyle}>
       {event ? (
-        <Card className="mt-4" style={{ width: "100%", maxWidth: "100vw" }}>
+        <Card className="mt-0" style={{ width: "100%", maxWidth: "100vw" }}>
           <Card.Img
             variant="top"
             src={event.coverPhotoUrl}
@@ -413,8 +421,9 @@ function UploadFile() {
       <div className="d-flex justify-content-end mt-3">
         <Button
           variant="primary"
+          className="btn-md"
           onClick={handleUploadButtonClick}
-          style={{ borderRadius: "20px" }}
+          style={{ borderRadius: "20px", backgroundColor: " #40a5f3", }}
         >
           Upload Image
         </Button>
@@ -455,8 +464,14 @@ function UploadFile() {
 
         <Button
           variant="primary"
+          className="btn-md"
           onClick={toggleDirectoryPoller}
-          style={{ marginLeft: "10px", borderRadius: "20px" }}
+          style={{
+            marginLeft: "10px",
+            borderRadius: "20px",
+            backgroundColor: " #40a5f3",
+            marginRight: '25px'
+          }}
         >
           Directory Polling
         </Button>
@@ -474,77 +489,99 @@ function UploadFile() {
           onChange={handleFileInputChange}
         />
       </div>
-      <div className="gallery mt-4">
+
+      <div className="gallery mt-4 row" style={{ marginLeft: '15px', marginRight: '15px' }}>
         {showAllPhotos
           ? galleryImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item"
+                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3 "
                 onClick={() => handleImageClick(index, "uploaded")}
               >
                 <img
                   src={item.imageUrl}
                   alt={`Uploaded ${index}`}
-                  className="gallery-img"
+                  className="w-100 mb-2 mb-md-4 shadow-1-strong rounded"
                 />
               </div>
             ))
           : matchedImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item"
+                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3"
                 onClick={() => handleImageClick(index, "matched")}
               >
                 <img
                   src={item.matchedImageUrl}
                   alt={`Matched ${index}`}
-                  className="gallery-img"
+                  className="w-100 shadow-1-strong rounded"
                 />
               </div>
             ))}
       </div>
+
+      {/* Image Viewer Modal as Lightbox */}
       {selectedImageIndex !== null && (
         <Modal
           show={showImageViewer}
           onHide={() => {
             setShowImageViewer(false);
             setSelectedImageType(null);
-            setShowMenu(false);
+            setShowMenu(false); // Reset the delete button state here
           }}
           centered
-          size="lg"
-          backdropClassName="blurred-backdrop"
+          size="xl"
+          dialogClassName="lightbox-modal"
         >
           <Modal.Body>
-            <img
-              src={
-                selectedImageType === "uploaded"
-                  ? galleryImages[selectedImageIndex]?.imageUrl
-                  : matchedImages[selectedImageIndex]?.matchedImageUrl
-              }
-              alt="Selected"
-              className="w-100"
-            />
-
-            <button onClick={() => setShowMenu(!showMenu)} className="menu-btn">
-              •••
-            </button>
-
-            {showMenu && (
-              <div className="menu-dropdown">
-                <button onClick={handleDeleteImage}>Delete</button>
-              </div>
-            )}
-
-            <button onClick={handlePreviousImage} className="nav-btn prev-btn">
-              ⬅️
-            </button>
-            <button onClick={handleNextImage} className="nav-btn next-btn">
-              ➡️
-            </button>
+            <Carousel
+              activeIndex={selectedImageIndex}
+              onSelect={(selectedIndex, e) => {
+                setSelectedImageIndex(selectedIndex);
+                setShowMenu(false); // Reset the delete button state here
+              }}
+              interval={null}
+              nextLabel=""
+              prevLabel=""
+              indicators={false}
+            >
+              {(selectedImageType === "uploaded"
+                ? galleryImages
+                : matchedImages
+              ).map((item, index) => (
+                <Carousel.Item key={index}>
+                  <img
+                    src={
+                      selectedImageType === "uploaded"
+                        ? item.imageUrl
+                        : item.matchedImageUrl
+                    }
+                    alt={`Image ${index}`}
+                    className="d-block w-100 lightbox-image"
+                  />
+                  <div className="lightbox-menu">
+                    <button
+                      className={`menu-btn ${showMenu ? "active" : ""}`} // Toggle the 'active' class
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(!showMenu);
+                      }}
+                    >
+                      •••
+                    </button>
+                    {showMenu && (
+                      <div className="menu-dropdown">
+                        <button onClick={handleDeleteImage}>Delete</button>
+                      </div>
+                    )}
+                  </div>
+                </Carousel.Item>
+              ))}
+            </Carousel>
           </Modal.Body>
         </Modal>
       )}
+
       <Toast
         style={{
           position: "fixed", // Change from "absolute" to "fixed"
@@ -565,37 +602,7 @@ function UploadFile() {
       <style>
         {`
           /* CSS styles for the gallery */
-          .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 10px;
-            margin-top: 20px;
-          }
-
-          .gallery-item {
-            position: relative;
-            width: 100%;
-            height: 0;
-            padding-bottom: 100%;
-            overflow: hidden;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-          }
-
-          .gallery-img {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.2s ease-in-out;
-          }
-
-          .gallery-item:hover .gallery-img {
-            transform: scale(1.05);
-          }
+          
 
           .delete-btn {
             position: absolute;
@@ -621,51 +628,62 @@ function UploadFile() {
             cursor: pointer;
           }
           
-          .prev-btn {
-            left: 10px;
-          }
-          
-          .next-btn {
-            right: 10px;
-          }
+          .lightbox-modal .modal-content {
+  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+  border: none;
+}
 
-          .menu-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background-color: rgba(0, 0, 0, 0.7);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            padding: 5px 10px;
-            cursor: pointer;
-            font-size: 18px;
-          }
-          
-          .menu-dropdown {
-            position: absolute;
-            top: 40px;
-            right: 10px;
-            background-color: white;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-          }
-          
-          .menu-dropdown button {
-            background: none;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            display: block;
-            width: 100%;
-            text-align: left;
-            border-bottom: 1px solid #ccc;
-          }
-          
-          .menu-dropdown button:last-child {
-            border-bottom: none;
-          }
+.lightbox-image {
+  max-height: 80vh; /* Limit image height to fit the screen */
+  object-fit: contain; /* Ensure the image fits within the element */
+  background-color: #000; /* Black background to fill empty space */
+}
+
+.lightbox-menu {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1050; /* This should be higher than the z-index of the carousel controls */
+}
+
+.menu-btn {
+  background: none;
+  border: none;
+  color: #fff; /* White color for visibility */
+  font-size: 1.5rem; /* Larger dots */
+  cursor: pointer;
+  z-index: 1050;
+}
+
+.menu-dropdown {
+  display: none; /* Initially hidden */
+  position: absolute;
+  top: 30px;
+  right: 0;
+  background-color: #fff;
+  border-radius: 5px;
+  padding: 5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.menu-dropdown button {
+  background: none;
+  border: none;
+  color: #333;
+  padding: 10px 20px;
+  cursor: pointer;
+  display: block;
+  width: 100%;
+  text-align: left;
+  z-index: 1050;
+}
+
+/* Show the dropdown menu when the menu button is active */
+.menu-btn.active + .menu-dropdown {
+  display: block;
+  z-index: 1050;
+}
+
           
           .blurred-backdrop {
             backdrop-filter: blur(5px);
