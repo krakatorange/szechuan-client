@@ -15,6 +15,7 @@ import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
+import SwipeableViews from "react-swipeable-views";
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -333,45 +334,75 @@ function UploadFile() {
     };
   }, [eventId, userId]);
 
+  useEffect(() => {
+    // Establish socket connection
+    socketRef.current = io.connect(process.env.REACT_APP_API);
+
+    // Listen for new face match event
+    socketRef.current.on("new-face-match", (data) => {
+      if (data.userId === userId && data.eventId === eventId) {
+        // Update the matchedImages state with the new image
+        setMatchedImages((prevMatchedImages) => [
+          ...prevMatchedImages,
+          data.matchedImage,
+        ]);
+      }
+    });
+
+    // Clean up the listener when the component unmounts
+    return () => {
+      socketRef.current.off("new-face-match");
+      socketRef.current.disconnect();
+    };
+  }, [userId, eventId]); // Dependencies array
+
+  function formatDate(dateString) {
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Intl.DateTimeFormat("en-US", options).format(
+      new Date(dateString)
+    );
+  }
+
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
     padding: "0", // maintains a small padding on the sides
-    margin: '0'
+    margin: "0",
+  };
+
+  const coverPhotoStyle = {
+    width: "100%",
+    objectFit: "cover",
   };
 
   return (
     <Container style={containerStyle}>
       {event ? (
         <Card className="mt-0" style={{ width: "100%", maxWidth: "100vw" }}>
+          {/* The Card.Img component is for the cover photo */}
           <Card.Img
             variant="top"
             src={event.coverPhotoUrl}
-            style={{ width: "100%", height: "500px", objectFit: "cover" }}
+            className="cover-photo"
+            style={coverPhotoStyle}
           />
-          <Card.Body
-            className="text-center"
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: "rgba(255, 255, 255, 0.2)",
-              borderBottomLeftRadius: "5px",
-              borderBottomRightRadius: "5px",
-              color: "white",
-              width: "100%",
-              maxWidth: "100vw",
-              boxSizing: "border-box",
-            }}
-          >
+
+          {/* The Card.Body component holds the event information and is displayed below the image */}
+          <Card.Body className="text-center" style={{padding: 10}}>
             <Card.Title>{event.eventName}</Card.Title>
-            <Card.Text>Event Date/Time: {event.eventDateTime}</Card.Text>
-            <Card.Text>Location: {event.eventLocation}</Card.Text>
+            <Card.Text>
+              {galleryImages.length} Photos . {formatDate(event.eventDateTime)}
+            </Card.Text>
+            <Card.Text>Venue: {event.eventLocation}</Card.Text>
             <button
               onClick={() => setShowAllPhotos(true)}
               className="custom-button"
             >
-              All Photos
+              All Photos ({galleryImages.length})
             </button>
             <button
               onClick={() => {
@@ -380,7 +411,7 @@ function UploadFile() {
               }}
               className="custom-button"
             >
-              Personal Gallery
+              Personal Gallery ({matchedImages.length})
             </button>
             <button onClick={handleInviteButtonClick} className="custom-button">
               Invite
@@ -423,7 +454,7 @@ function UploadFile() {
           variant="primary"
           className="btn-md"
           onClick={handleUploadButtonClick}
-          style={{ borderRadius: "20px", backgroundColor: " #40a5f3", }}
+          style={{ borderRadius: "20px", backgroundColor: " #40a5f3" }}
         >
           Upload Image
         </Button>
@@ -470,7 +501,7 @@ function UploadFile() {
             marginLeft: "10px",
             borderRadius: "20px",
             backgroundColor: " #40a5f3",
-            marginRight: '25px'
+            marginRight: "25px",
           }}
         >
           Directory Polling
@@ -490,36 +521,38 @@ function UploadFile() {
         />
       </div>
 
-      <div className="gallery mt-4 row" style={{ marginLeft: '15px', marginRight: '15px' }}>
+      <div
+        className="gallery mt-4"
+        style={{ marginLeft: "15px", marginRight: "15px" }}
+      >
         {showAllPhotos
           ? galleryImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3 "
+                className="gallery-item"
                 onClick={() => handleImageClick(index, "uploaded")}
               >
                 <img
                   src={item.imageUrl}
                   alt={`Uploaded ${index}`}
-                  className="w-100 mb-2 mb-md-4 shadow-1-strong rounded"
+                  className="mb-2 mb-md-4 shadow-1-strong rounded"
                 />
               </div>
             ))
           : matchedImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3"
+                className="gallery-item"
                 onClick={() => handleImageClick(index, "matched")}
               >
                 <img
                   src={item.matchedImageUrl}
                   alt={`Matched ${index}`}
-                  className="w-100 shadow-1-strong rounded"
+                  className="shadow-1-strong rounded"
                 />
               </div>
             ))}
       </div>
-
       {/* Image Viewer Modal as Lightbox */}
       {selectedImageIndex !== null && (
         <Modal
@@ -544,6 +577,7 @@ function UploadFile() {
               nextLabel=""
               prevLabel=""
               indicators={false}
+              touch={true}
             >
               {(selectedImageType === "uploaded"
                 ? galleryImages
@@ -581,7 +615,6 @@ function UploadFile() {
           </Modal.Body>
         </Modal>
       )}
-
       <Toast
         style={{
           position: "fixed", // Change from "absolute" to "fixed"
@@ -719,6 +752,71 @@ function UploadFile() {
               padding: 10px 0; /* adds some padding at the top and bottom */
             }
           }
+
+          /* CSS in your stylesheet or <style> tag */
+.gallery {
+  column-count: 6;
+  column-gap: 10px;
+}
+
+.gallery-item {
+  break-inside: avoid;
+  margin-bottom: 15px;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .gallery {
+    column-count: 4;
+  }
+}
+
+@media (max-width: 992px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .gallery {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 576px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+.gallery-item img {
+  width: 100%;
+  display: block;
+  border-radius: 4px;
+}
+
+/* Mobile devices */
+@media (max-width: 767px) { 
+  .cover-photo { 
+    height: 250px; /* Rectangle shape for mobile */
+  }
+}
+
+/* Tablets and up */
+@media (min-width: 768px) { 
+  .cover-photo{ 
+    height: 400px; /* Slightly larger for tablets */
+  }
+}
+
+/* Desktops and up */
+@media (min-width: 992px) { 
+  .cover-photo { 
+    height: 600px; /* Standard size for desktops */
+  }
+}
           
         `}
       </style>
