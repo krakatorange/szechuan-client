@@ -15,6 +15,7 @@ import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
+import SwipeableViews from 'react-swipeable-views';
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -336,7 +337,7 @@ function UploadFile() {
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
     padding: "0", // maintains a small padding on the sides
-    margin: '0'
+    margin: "0",
   };
 
   return (
@@ -371,7 +372,7 @@ function UploadFile() {
               onClick={() => setShowAllPhotos(true)}
               className="custom-button"
             >
-              All Photos
+               All Photos ({galleryImages.length})
             </button>
             <button
               onClick={() => {
@@ -380,7 +381,7 @@ function UploadFile() {
               }}
               className="custom-button"
             >
-              Personal Gallery
+              Personal Gallery ({matchedImages.length})
             </button>
             <button onClick={handleInviteButtonClick} className="custom-button">
               Invite
@@ -423,7 +424,7 @@ function UploadFile() {
           variant="primary"
           className="btn-md"
           onClick={handleUploadButtonClick}
-          style={{ borderRadius: "20px", backgroundColor: " #40a5f3", }}
+          style={{ borderRadius: "20px", backgroundColor: " #40a5f3" }}
         >
           Upload Image
         </Button>
@@ -470,7 +471,7 @@ function UploadFile() {
             marginLeft: "10px",
             borderRadius: "20px",
             backgroundColor: " #40a5f3",
-            marginRight: '25px'
+            marginRight: "25px",
           }}
         >
           Directory Polling
@@ -490,36 +491,38 @@ function UploadFile() {
         />
       </div>
 
-      <div className="gallery mt-4 row" style={{ marginLeft: '15px', marginRight: '15px' }}>
+      <div
+        className="gallery mt-4"
+        style={{ marginLeft: "15px", marginRight: "15px" }}
+      >
         {showAllPhotos
           ? galleryImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3 "
+                className="gallery-item"
                 onClick={() => handleImageClick(index, "uploaded")}
               >
                 <img
                   src={item.imageUrl}
                   alt={`Uploaded ${index}`}
-                  className="w-100 mb-2 mb-md-4 shadow-1-strong rounded"
+                  className="mb-2 mb-md-4 shadow-1-strong rounded"
                 />
               </div>
             ))
           : matchedImages.map((item, index) => (
               <div
                 key={index}
-                className="gallery-item col-6 col-sm-4 col-md-3 col-lg-3"
+                className="gallery-item"
                 onClick={() => handleImageClick(index, "matched")}
               >
                 <img
                   src={item.matchedImageUrl}
                   alt={`Matched ${index}`}
-                  className="w-100 shadow-1-strong rounded"
+                  className="shadow-1-strong rounded"
                 />
               </div>
             ))}
       </div>
-
       {/* Image Viewer Modal as Lightbox */}
       {selectedImageIndex !== null && (
         <Modal
@@ -544,6 +547,7 @@ function UploadFile() {
               nextLabel=""
               prevLabel=""
               indicators={false}
+              touch={true}
             >
               {(selectedImageType === "uploaded"
                 ? galleryImages
@@ -581,7 +585,6 @@ function UploadFile() {
           </Modal.Body>
         </Modal>
       )}
-
       <Toast
         style={{
           position: "fixed", // Change from "absolute" to "fixed"
@@ -719,6 +722,51 @@ function UploadFile() {
               padding: 10px 0; /* adds some padding at the top and bottom */
             }
           }
+
+          /* CSS in your stylesheet or <style> tag */
+.gallery {
+  column-count: 6;
+  column-gap: 10px;
+}
+
+.gallery-item {
+  break-inside: avoid;
+  margin-bottom: 15px;
+  display: inline-block;
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .gallery {
+    column-count: 4;
+  }
+}
+
+@media (max-width: 992px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+@media (max-width: 768px) {
+  .gallery {
+    column-count: 2;
+  }
+}
+
+@media (max-width: 576px) {
+  .gallery {
+    column-count: 3;
+  }
+}
+
+.gallery-item img {
+  width: 100%;
+  display: block;
+  border-radius: 4px;
+}
+
           
         `}
       </style>

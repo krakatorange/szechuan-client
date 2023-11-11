@@ -1,19 +1,51 @@
-import React, { createContext, useState, useContext } from "react";
+import React, { createContext, useState, useEffect, useContext } from "react";
 
-// Create a Context
 export const DirectoryPollerContext = createContext();
 
-// Create a Provider component
 export const DirectoryPollerProvider = ({ children }) => {
-  const [isPollerRunning, setIsPollerRunning] = useState(false);
-  const [isPollerMinimized, setIsPollerMinimized] = useState(false);
-  const [currentEventId, setCurrentEventId] = useState(null);
-  const [eventName, setEventName] = useState("");
-  const [url, setUrl] = useState("");
-  const [newImages, setNewImages] = useState([]);
-  const [uploadedImages, setUploadedImages] = useState([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [showMonitorImages, setShowMonitorImages] = useState(false);
+  // Initialize state with values from localStorage or default values
+  const initialState = JSON.parse(localStorage.getItem("directoryPollerState")) || {
+    isPollerRunning: false,
+    isPollerMinimized: false,
+    currentEventId: null,
+    eventName: "",
+    url: "",
+    newImages: [],
+    uploadedImages: [],
+    isUploading: false,
+    showMonitorImages: false,
+  };
+
+  const [isPollerRunning, setIsPollerRunning] = useState(initialState.isPollerRunning);
+  const [isPollerMinimized, setIsPollerMinimized] = useState(initialState.isPollerMinimized);
+  const [currentEventId, setCurrentEventId] = useState(initialState.currentEventId);
+  const [eventName, setEventName] = useState(initialState.eventName);
+  const [url, setUrl] = useState(initialState.url);
+  const [newImages, setNewImages] = useState(initialState.newImages);
+  const [uploadedImages, setUploadedImages] = useState(initialState.uploadedImages);
+  const [isUploading, setIsUploading] = useState(initialState.isUploading);
+  const [showMonitorImages, setShowMonitorImages] = useState(initialState.showMonitorImages);
+
+  // Function to save state to localStorage
+  const saveState = () => {
+    const state = {
+      isPollerRunning,
+      isPollerMinimized,
+      currentEventId,
+      eventName,
+      url,
+      newImages,
+      uploadedImages,
+      isUploading,
+      showMonitorImages,
+    };
+    localStorage.setItem("directoryPollerState", JSON.stringify(state));
+  };
+
+  // Save state to localStorage on state changes
+  useEffect(() => {
+    saveState();
+  }, [isPollerRunning, isPollerMinimized, currentEventId, eventName, url, newImages, uploadedImages, isUploading, showMonitorImages]);
 
   return (
     <DirectoryPollerContext.Provider
@@ -24,6 +56,8 @@ export const DirectoryPollerProvider = ({ children }) => {
         setIsPollerMinimized,
         currentEventId,
         setCurrentEventId,
+        eventName,
+        setEventName,
         url,
         setUrl,
         newImages,
@@ -34,8 +68,6 @@ export const DirectoryPollerProvider = ({ children }) => {
         setIsUploading,
         showMonitorImages,
         setShowMonitorImages,
-        eventName,
-        setEventName,
       }}
     >
       {children}
@@ -43,7 +75,6 @@ export const DirectoryPollerProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use this context
 export const useDirectoryPoller = () => {
   return useContext(DirectoryPollerContext);
 };
