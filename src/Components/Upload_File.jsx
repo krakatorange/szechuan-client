@@ -15,7 +15,7 @@ import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
-import SwipeableViews from 'react-swipeable-views';
+import SwipeableViews from "react-swipeable-views";
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -337,22 +337,36 @@ function UploadFile() {
   useEffect(() => {
     // Establish socket connection
     socketRef.current = io.connect(process.env.REACT_APP_API);
-  
+
     // Listen for new face match event
-    socketRef.current.on('new-face-match', (data) => {
+    socketRef.current.on("new-face-match", (data) => {
       if (data.userId === userId && data.eventId === eventId) {
         // Update the matchedImages state with the new image
-        setMatchedImages((prevMatchedImages) => [...prevMatchedImages, data.matchedImage]);
+        setMatchedImages((prevMatchedImages) => [
+          ...prevMatchedImages,
+          data.matchedImage,
+        ]);
       }
     });
-  
+
     // Clean up the listener when the component unmounts
     return () => {
-      socketRef.current.off('new-face-match');
+      socketRef.current.off("new-face-match");
       socketRef.current.disconnect();
     };
   }, [userId, eventId]); // Dependencies array
-  
+
+  function formatDate(dateString) {
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Intl.DateTimeFormat("en-US", options).format(
+      new Date(dateString)
+    );
+  }
 
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
@@ -360,39 +374,35 @@ function UploadFile() {
     margin: "0",
   };
 
+  const coverPhotoStyle = {
+    width: "100%",
+    objectFit: "cover",
+  };
+
   return (
     <Container style={containerStyle}>
       {event ? (
         <Card className="mt-0" style={{ width: "100%", maxWidth: "100vw" }}>
+          {/* The Card.Img component is for the cover photo */}
           <Card.Img
             variant="top"
             src={event.coverPhotoUrl}
-            style={{ width: "100%", height: "500px", objectFit: "cover" }}
+            className="cover-photo"
+            style={coverPhotoStyle}
           />
-          <Card.Body
-            className="text-center"
-            style={{
-              position: "absolute",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              background: "rgba(255, 255, 255, 0.2)",
-              borderBottomLeftRadius: "5px",
-              borderBottomRightRadius: "5px",
-              color: "white",
-              width: "100%",
-              maxWidth: "100vw",
-              boxSizing: "border-box",
-            }}
-          >
+
+          {/* The Card.Body component holds the event information and is displayed below the image */}
+          <Card.Body className="text-center" style={{padding: 10}}>
             <Card.Title>{event.eventName}</Card.Title>
-            <Card.Text>Event Date/Time: {event.eventDateTime}</Card.Text>
-            <Card.Text>Location: {event.eventLocation}</Card.Text>
+            <Card.Text>
+              {galleryImages.length} Photos . {formatDate(event.eventDateTime)}
+            </Card.Text>
+            <Card.Text>Venue: {event.eventLocation}</Card.Text>
             <button
               onClick={() => setShowAllPhotos(true)}
               className="custom-button"
             >
-               All Photos ({galleryImages.length})
+              All Photos ({galleryImages.length})
             </button>
             <button
               onClick={() => {
@@ -787,6 +797,26 @@ function UploadFile() {
   border-radius: 4px;
 }
 
+/* Mobile devices */
+@media (max-width: 767px) { 
+  .cover-photo { 
+    height: 250px; /* Rectangle shape for mobile */
+  }
+}
+
+/* Tablets and up */
+@media (min-width: 768px) { 
+  .cover-photo{ 
+    height: 400px; /* Slightly larger for tablets */
+  }
+}
+
+/* Desktops and up */
+@media (min-width: 992px) { 
+  .cover-photo { 
+    height: 600px; /* Standard size for desktops */
+  }
+}
           
         `}
       </style>
