@@ -334,6 +334,26 @@ function UploadFile() {
     };
   }, [eventId, userId]);
 
+  useEffect(() => {
+    // Establish socket connection
+    socketRef.current = io.connect(process.env.REACT_APP_API);
+  
+    // Listen for new face match event
+    socketRef.current.on('new-face-match', (data) => {
+      if (data.userId === userId && data.eventId === eventId) {
+        // Update the matchedImages state with the new image
+        setMatchedImages((prevMatchedImages) => [...prevMatchedImages, data.matchedImage]);
+      }
+    });
+  
+    // Clean up the listener when the component unmounts
+    return () => {
+      socketRef.current.off('new-face-match');
+      socketRef.current.disconnect();
+    };
+  }, [userId, eventId]); // Dependencies array
+  
+
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
     padding: "0", // maintains a small padding on the sides
