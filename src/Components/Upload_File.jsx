@@ -15,7 +15,6 @@ import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
-import SwipeableViews from "react-swipeable-views";
 
 function UploadFile() {
   const { eventId } = useParams();
