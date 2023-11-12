@@ -8,7 +8,7 @@ import { useDirectoryPoller } from "../DirectoryPollerContext";
 function CustomNavbar() {
   const [showDrawer, setShowDrawer] = useState(false);
   const navigate = useNavigate();
-  const { user, logOut } = useUserAuth();
+  const { user, logOut, isAdmin } = useUserAuth();
   const userId = user?.uid;
   const { isPollerRunning,  eventName, currentEventId, setShowMonitorImages } = useDirectoryPoller();
   const userIconRef = useRef(null); // Ref for the user icon
@@ -133,11 +133,13 @@ function CustomNavbar() {
               <span style={styles.eventId}>{eventName}</span>
             </div>
           )}
-          <Link to="/events" className="mr-3">
-            <Button variant="primary" size="sm" style={styles.button}>
-              Create Event
-            </Button>
-          </Link>
+         {isAdmin && (
+            <Link to="/events" className="mr-3">
+              <Button variant="primary" size="sm" style={styles.button}>
+                Create Event
+              </Button>
+            </Link>
+          )}
           <div style={styles.userIcon} onClick={toggleDrawer} ref={userIconRef}>
             <FaUserCircle size={24} color="#40a5f3" />
           </div>

@@ -6,6 +6,7 @@ import "./css/notificationBox.css";
 import EditEvent from "./UpdateEvent";
 import { Modal, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
+import { useUserAuth } from "../UserContextProvider";
 
 function EventNotification({ event, onDelete, onEventUpdated }) {
   const { id, eventName, eventDateTime, coverPhotoUrl, eventLocation } = event;
@@ -15,6 +16,7 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const navigate = useNavigate();
+  const { isAdmin } = useUserAuth(); 
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -89,9 +91,11 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
             <p className="card-text">Location: {eventLocation}</p>
             <p className="card-text">Time remaining: {timeRemaining}</p>
           </div>
+          {isAdmin && ( // Conditionally render menu if isAdmin
           <span className="menu-button" onClick={toggleMenu}>
             ...
           </span>
+        )}
           {menuVisible && (
             <div className="card-menu">
               <button className="edit-button" onClick={handleEdit}>
