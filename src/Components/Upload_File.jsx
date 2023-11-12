@@ -24,7 +24,7 @@ function UploadFile() {
   const [showAllPhotos, setShowAllPhotos] = useState(true); // Add state for toggling between all photos and personal photos
   const [loading, setLoading] = useState(true); // Add loading state for fetching matched images
   const [matchedImages, setMatchedImages] = useState([]); // Add state to store matched images
-  const { user } = useUserAuth();
+  const { user, isAdmin } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
   const {
@@ -376,12 +376,21 @@ function UploadFile() {
   const coverPhotoStyle = {
     width: "100%",
     objectFit: "cover",
+    borderRadius: '10px'
   };
 
   return (
     <Container style={containerStyle}>
       {event ? (
-        <Card className="mt-0" style={{ width: "100%", maxWidth: "100vw" }}>
+        <Card
+          className="mt-0"
+          style={{
+            width: "100%",
+            maxWidth: "100vw",
+            padding: "20px",
+            boxSizing: "border-box",
+          }}
+        >
           {/* The Card.Img component is for the cover photo */}
           <Card.Img
             variant="top"
@@ -391,7 +400,7 @@ function UploadFile() {
           />
 
           {/* The Card.Body component holds the event information and is displayed below the image */}
-          <Card.Body className="text-center" style={{padding: 10}}>
+          <Card.Body className="text-center" style={{ padding: 10 }}>
             <Card.Title>{event.eventName}</Card.Title>
             <Card.Text>
               {galleryImages.length} Photos . {formatDate(event.eventDateTime)}
@@ -449,14 +458,16 @@ function UploadFile() {
         </Modal.Footer>
       </Modal>
       <div className="d-flex justify-content-end mt-3">
-        <Button
-          variant="primary"
-          className="btn-md"
-          onClick={handleUploadButtonClick}
-          style={{ borderRadius: "20px", backgroundColor: " #40a5f3" }}
-        >
-          Upload Image
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="primary"
+            className="btn-md"
+            onClick={handleUploadButtonClick}
+            style={{ borderRadius: "20px", backgroundColor: " #40a5f3" }}
+          >
+            Upload Image
+          </Button>
+        )}
         <div
           style={{
             position: "absolute",
@@ -492,19 +503,21 @@ function UploadFile() {
           </Toast>
         </div>
 
-        <Button
-          variant="primary"
-          className="btn-md"
-          onClick={toggleDirectoryPoller}
-          style={{
-            marginLeft: "10px",
-            borderRadius: "20px",
-            backgroundColor: " #40a5f3",
-            marginRight: "25px",
-          }}
-        >
-          Directory Polling
-        </Button>
+        {isAdmin && (
+          <Button
+            variant="primary"
+            className="btn-md"
+            onClick={toggleDirectoryPoller}
+            style={{
+              marginLeft: "10px",
+              borderRadius: "20px",
+              backgroundColor: " #40a5f3",
+              marginRight: "25px",
+            }}
+          >
+            Directory Polling
+          </Button>
+        )}
         <DirectoryPoller
           show={showMonitorImages} // use showMonitorImages from context to control visibility
           onHide={toggleDirectoryPoller}
@@ -592,22 +605,24 @@ function UploadFile() {
                     alt={`Image ${index}`}
                     className="d-block w-100 lightbox-image"
                   />
-                  <div className="lightbox-menu">
-                    <button
-                      className={`menu-btn ${showMenu ? "active" : ""}`} // Toggle the 'active' class
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowMenu(!showMenu);
-                      }}
-                    >
-                      •••
-                    </button>
-                    {showMenu && (
-                      <div className="menu-dropdown">
-                        <button onClick={handleDeleteImage}>Delete</button>
-                      </div>
-                    )}
-                  </div>
+                  {isAdmin && ( // Conditionally render the three-dot menu for admins
+                    <div className="lightbox-menu">
+                      <button
+                        className={`menu-btn ${showMenu ? "active" : ""}`} // Toggle the 'active' class
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(!showMenu);
+                        }}
+                      >
+                        •••
+                      </button>
+                      {showMenu && (
+                        <div className="menu-dropdown">
+                          <button onClick={handleDeleteImage}>Delete</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </Carousel.Item>
               ))}
             </Carousel>
@@ -763,6 +778,8 @@ function UploadFile() {
   margin-bottom: 15px;
   display: inline-block;
   width: 100%;
+  position: relative; /* Needed for absolute positioning of the image */
+  overflow: hidden;
 }
 
 /* Responsive adjustments */
@@ -786,7 +803,7 @@ function UploadFile() {
 
 @media (max-width: 576px) {
   .gallery {
-    column-count: 3;
+    column-count: 1;
   }
 }
 
@@ -798,6 +815,7 @@ function UploadFile() {
 
 /* Mobile devices */
 @media (max-width: 767px) { 
+
   .cover-photo { 
     height: 250px; /* Rectangle shape for mobile */
   }

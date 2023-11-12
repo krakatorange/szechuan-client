@@ -10,6 +10,7 @@ function MonitorImages({ show, onHide, eventId }) {
   const [loading, setLoading] = useState(false);
   const [showTick, setShowTick] = useState(false); // New state for showing the tick
   const socketRef = useRef(null);
+  const [isInputDisabled, setIsInputDisabled] = useState(false);
   const uploadInterval = useRef(null);
   const {
     url,
@@ -105,6 +106,7 @@ function MonitorImages({ show, onHide, eventId }) {
   const startMonitoringAndUploading = () => {
     setIsPollerRunning(true);
     setIsUploading(true);
+    setIsInputDisabled(true);
 
     uploadInterval.current = setInterval(async () => {
       await monitorImages();
@@ -114,6 +116,7 @@ function MonitorImages({ show, onHide, eventId }) {
   const stopUploading = () => {
     setIsPollerRunning(false);
     setIsUploading(false);
+    setIsInputDisabled(false);
     clearInterval(uploadInterval.current);
   };
 
@@ -153,11 +156,12 @@ function MonitorImages({ show, onHide, eventId }) {
         <Modal.Title>Monitor External Directory</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <input
+      <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter URL to monitor"
+          disabled={isInputDisabled} // Apply the disabled property
           style={{ width: "100%", marginBottom: "10px" }}
         />
         <Button
