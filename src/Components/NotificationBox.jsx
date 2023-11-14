@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { parseISO, formatDistanceToNow, format } from "date-fns";
 import { Link } from "react-router-dom";
 import Logger from "../logger";
-import "./css/notificationBox.css";
+//import "./css/notificationBox.css";
 import EditEvent from "./UpdateEvent";
 import { Modal, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -78,57 +78,155 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
 
   const formattedEventDateTime = format(eventTime, "MMMM d, yyyy h:mm a");
 
+
+
   return (
-    <div className="event-notification-col">
-      <div className="event-notification-card">
-        <div className="card-img-container">
-          <img src={coverPhotoUrl} alt={eventName} />
-          <div className="event-details-overlay">
-            <h5 className="card-title">{eventName}</h5>
-            <p className="card-text">
-              Event Date/Time: {formattedEventDateTime}
-            </p>
-            <p className="card-text">Location: {eventLocation}</p>
-            <p className="card-text">Time remaining: {timeRemaining}</p>
-          </div>
-          {isAdmin && ( // Conditionally render menu if isAdmin
-          <span className="menu-button" onClick={toggleMenu}>
-            ...
-          </span>
-        )}
-          {menuVisible && (
-            <div className="card-menu">
-              <button className="edit-button" onClick={handleEdit}>
-                Edit
-              </button>
-              <button className="delete-button" onClick={deleteEvent}>
-                Delete
-              </button>
+    <>
+      <style>
+        {`
+          .card {
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+          }
+
+          .img-container {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+          }
+
+          .img-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .event-name-overlay {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 1.0em;
+          }
+
+          .menu-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            background-color: rgba(0, 0, 0, 0.4); /* Semi-transparent black */
+            color: white;
+            border-radius: 4px; /* Slightly rounded corners */
+            padding: 6px 10px;
+            font-size: 18px; /* Larger font size for visibility */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 30px; /* Fixed width */
+            height: 30px; /* Fixed height */
+          }
+
+          .menu-button:before, .menu-button:after {
+            content: '';
+            display: block;
+            width: 20px; /* Width of the bars */
+            height: 2px; /* Height of the bars */
+            background-color: white; /* Color of the bars */
+            margin: 4px 0; /* Spacing between the bars */
+          }
+
+          .card-menu {
+            position: absolute;
+            top: 40px;
+            right: 10px;
+            background-color: white;
+            box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.1);
+            padding: 8px 12px;
+            z-index: 3;
+          }
+
+          .btn {
+            background-color: #40a5f3;
+            color: white;
+            padding: 10px 16px;
+            text-align: center;
+            display: block;
+            font-size: 1em;
+            border-radius: 10px;
+            width: 100%;
+            text-decoration: none;
+            margin-top: 10px;
+            border-color: #40a5f3;
+          }
+
+          .btn:hover {
+            border-color: #40a5f3; /* Border color on hover */
+          }
+
+          @media (max-width: 768px) {
+            .img-container {
+              height: 250px;
+            }
+          }
+        `}
+      </style>
+
+      <div className="col-lg-5 col-md-12 mb-4">
+        <div className="card h-100">
+          <div className="img-container">
+            <img src={event.coverPhotoUrl} alt={event.eventName} />
+            <div className="event-name-overlay">
+              {event.eventName}
             </div>
-          )}
+            {isAdmin && (
+              <button className="menu-button" onClick={toggleMenu}>
+                ...
+              </button>
+            )}
+            {menuVisible && (
+              <div className="card-menu">
+                <button className="edit-button btn" onClick={handleEdit}>
+                  Edit
+                </button>
+                <button className="delete-button btn" onClick={deleteEvent}>
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+          <div className="card-footer">
+            <Link to={`/event/${event.id}`} className="btn">
+              Go to Gallery
+            </Link>
+          </div>
         </div>
-        <Link to={`/event/${id}`} className="go-gallery-button">
-          Go to Gallery
-        </Link>
+        {/* Edit Event Modal */}
+        <Modal
+          show={showEditModal}
+          onHide={handleCloseEditModal}
+          size="lg"
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>Edit Event</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <EditEvent
+              eventId={event.id}
+              onEventUpdated={handleEventUpdated}
+            />
+          </Modal.Body>
+        </Modal>
       </div>
-      {/* Edit Event Modal */}
-      <Modal
-        show={showEditModal}
-        onHide={handleCloseEditModal}
-        size="lg"
-        centered
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Edit Event</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <EditEvent
-            eventId={event.id} // pass the event ID to EditEvent
-            onEventUpdated={handleEventUpdated} // Pass the local function that handles event update
-          />
-        </Modal.Body>
-      </Modal>
-    </div>
+    </>
   );
 }
 
