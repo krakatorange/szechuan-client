@@ -75,22 +75,35 @@ function UploadFile() {
     });
   };
 
+  const getImageUrlForDownload = (index) => {
+    const image =
+      selectedImageType === "uploaded"
+        ? galleryImages[index]
+        : matchedImages[index];
+    return image.imageUrl || image.matchedImageUrl;
+  };
+
+  const downloadImage = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const localUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = localUrl;
+      link.download = "downloaded-image"; // You can set a specific filename here
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(localUrl);
+    } catch (error) {
+      console.error("Error downloading the image:", error);
+    }
+  };
+
   const handleImageClick = (index, type) => {
     setSelectedImageIndex(index);
     setSelectedImageType(type); // set the type of image clicked
     setShowImageViewer(true);
-  };
-
-  const handleNextImage = () => {
-    if (selectedImageIndex < galleryImages.length - 1) {
-      setSelectedImageIndex(selectedImageIndex + 1);
-    }
-  };
-
-  const handlePreviousImage = () => {
-    if (selectedImageIndex > 0) {
-      setSelectedImageIndex(selectedImageIndex - 1);
-    }
   };
 
   const handleDeleteImage = () => {
@@ -376,7 +389,7 @@ function UploadFile() {
   const coverPhotoStyle = {
     width: "100%",
     objectFit: "cover",
-    borderRadius: '10px'
+    borderRadius: "10px",
   };
 
   return (
@@ -608,21 +621,46 @@ function UploadFile() {
                   {isAdmin && ( // Conditionally render the three-dot menu for admins
                     <div className="lightbox-menu">
                       <button
-                        className={`menu-btn ${showMenu ? "active" : ""}`} // Toggle the 'active' class
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowMenu(!showMenu);
-                        }}
+                      className="delete-btn"
+                      title="Delete Image"
+                      onClick={() => handleDeleteImage(index)}
+                    >
+                      {/* SVG for the delete icon */}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="white"
+                        viewBox="0 0 24 24"
                       >
-                        •••
-                      </button>
-                      {showMenu && (
-                        <div className="menu-dropdown">
-                          <button onClick={handleDeleteImage}>Delete</button>
-                        </div>
-                      )}
+                        {/* Update the path for the delete icon */}
+                        <path d="M3 6v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6h-4.18l-1.82-2H9L7.18 6H3zm16 14H5V8h14v12zm-7-9v6h-2v-6h2zm4 0v6h-2v-6h2zm-8 0v6H6v-6h2z"/>
+                      </svg>
+                    </button>
                     </div>
                   )}
+                  <div className="lightbox-download-menu">
+                    <button
+                      className="download-btn"
+                      title="Download Image"
+                      onClick={() =>
+                        downloadImage(
+                          getImageUrlForDownload(selectedImageIndex)
+                        )
+                      }
+                    >
+                      {/* SVG for the download icon */}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        fill="white"
+                        viewBox="0 0 24 24"
+                      >
+                        <path d="M12 15l4-5h-3V0H11v10H8l4 5zM4 22h16v2H4z" />
+                      </svg>
+                    </button>
+                  </div>
                 </Carousel.Item>
               ))}
             </Carousel>
@@ -662,6 +700,23 @@ function UploadFile() {
             padding: 10px;
             cursor: pointer;
           }
+
+          .lightbox-download-menu {
+            position: absolute;
+            top: 80px;
+            right: 25px;
+            z-index: 1050; // Higher z-index to ensure it's above other elements
+          }
+  
+          .download-btn {
+            background: none;
+            border: none;
+            color: #fff; // White color for visibility
+            font-size: 1.2rem; // Adjust as needed
+            cursor: pointer;
+            text-decoration: none; // Removes underline from links
+          }
+  
           
           .nav-btn {
             position: absolute;
@@ -693,43 +748,7 @@ function UploadFile() {
   z-index: 1050; /* This should be higher than the z-index of the carousel controls */
 }
 
-.menu-btn {
-  background: none;
-  border: none;
-  color: #fff; /* White color for visibility */
-  font-size: 1.5rem; /* Larger dots */
-  cursor: pointer;
-  z-index: 1050;
-}
 
-.menu-dropdown {
-  display: none; /* Initially hidden */
-  position: absolute;
-  top: 30px;
-  right: 0;
-  background-color: #fff;
-  border-radius: 5px;
-  padding: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-.menu-dropdown button {
-  background: none;
-  border: none;
-  color: #333;
-  padding: 10px 20px;
-  cursor: pointer;
-  display: block;
-  width: 100%;
-  text-align: left;
-  z-index: 1050;
-}
-
-/* Show the dropdown menu when the menu button is active */
-.menu-btn.active + .menu-dropdown {
-  display: block;
-  z-index: 1050;
-}
 
           
           .blurred-backdrop {
