@@ -85,11 +85,9 @@ function Dashboard() {
 
   return (
     <Container className="dashboard-container">
-      <h1 className="mt-4">Dashboard</h1>
+      <h1 className="mt-4">Events Dashboard</h1>
       <Card className="dashboard-card mt-4">
         <Card.Body>
-          <h5>You are all checked in!</h5>
-          <p>You'll get a text when photos from your event are uploaded.</p>
           <div className="notification-container">
             {events.map((event) => (
               <NotificationBox
@@ -97,7 +95,6 @@ function Dashboard() {
                 event={event}
                 onDelete={deleteEvent}
                 onEventUpdated={onEventUpdated}
-                className="notification-box"
               />
             ))}
           </div>

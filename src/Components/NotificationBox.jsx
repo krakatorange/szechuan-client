@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback } from "react";
 import { parseISO, formatDistanceToNow, format } from "date-fns";
 import { Link } from "react-router-dom";
 import Logger from "../logger";
-//import "./css/notificationBox.css";
 import EditEvent from "./UpdateEvent";
 import { Modal, Button } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -16,7 +15,7 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const navigate = useNavigate();
-  const { isAdmin } = useUserAuth(); 
+  const { isAdmin } = useUserAuth();
 
   const toggleMenu = () => {
     setMenuVisible(!menuVisible);
@@ -35,6 +34,11 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
     if (!e.target.closest(".menu-button") && !e.target.closest(".card-menu")) {
       setMenuVisible(false);
     }
+  };
+
+  const handleCardClick = () => {
+    // Navigate to the event details page
+    navigate(`/event/${event.id}`);
   };
 
   useEffect(() => {
@@ -77,8 +81,6 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
   }, [eventTime, eventName, alertShown]);
 
   const formattedEventDateTime = format(eventTime, "MMMM d, yyyy h:mm a");
-
-
 
   return (
     <>
@@ -180,19 +182,28 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
       </style>
 
       <div className="col-lg-5 col-md-12 mb-4">
-        <div className="card h-100">
+        {/* Use an outer div to handle the card click */}
+        <div
+          className="card h-100"
+          onClick={handleCardClick}
+          style={{ cursor: "pointer" }}
+        >
           <div className="img-container">
             <img src={event.coverPhotoUrl} alt={event.eventName} />
-            <div className="event-name-overlay">
-              {event.eventName}
-            </div>
+            <div className="event-name-overlay">{event.eventName}</div>
             {isAdmin && (
-              <button className="menu-button" onClick={toggleMenu}>
+              <button
+                className="menu-button"
+                onClick={(e) => {
+                  e.stopPropagation(); // Prevent card click when the menu button is clicked
+                  toggleMenu();
+                }}
+              >
                 ...
               </button>
             )}
             {menuVisible && (
-              <div className="card-menu">
+              <div className="card-menu" onClick={(e) => e.stopPropagation()}>
                 <button className="edit-button btn" onClick={handleEdit}>
                   Edit
                 </button>
@@ -201,11 +212,6 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
                 </button>
               </div>
             )}
-          </div>
-          <div className="card-footer">
-            <Link to={`/event/${event.id}`} className="btn">
-              Go to Gallery
-            </Link>
           </div>
         </div>
         {/* Edit Event Modal */}
@@ -219,10 +225,7 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
             <Modal.Title>Edit Event</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <EditEvent
-              eventId={event.id}
-              onEventUpdated={handleEventUpdated}
-            />
+            <EditEvent eventId={event.id} onEventUpdated={handleEventUpdated} />
           </Modal.Body>
         </Modal>
       </div>
