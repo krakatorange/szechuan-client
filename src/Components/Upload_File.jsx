@@ -108,27 +108,44 @@ function UploadFile() {
 
   const handleDeleteImage = () => {
     if (selectedImageIndex !== null) {
-      const imageToDelete = galleryImages[selectedImageIndex];
-
-      // Extract the imageId from the imageUrl
-      const imageUrlSegments = imageToDelete.imageUrl.split("/");
-      const imageIdToDelete = imageUrlSegments[imageUrlSegments.length - 1];
-
-      // Make the DELETE API call
+      let apiUrl = '';
+      let imageKey = '';
+      let updatedImages = [];
+  
+      if (selectedImageType === 'uploaded') {
+        const imageToDelete = galleryImages[selectedImageIndex];
+        const imageUrlSegments = imageToDelete.imageUrl.split("/");
+        imageKey = imageUrlSegments[imageUrlSegments.length - 1];
+        apiUrl = `${process.env.REACT_APP_API}/events/${eventId}/gallery/${imageKey}`;
+  
+        updatedImages = galleryImages.filter((_, index) => index !== selectedImageIndex);
+      } else if (selectedImageType === 'matched') {
+        const imageToDelete = matchedImages[selectedImageIndex];
+        const imageUrlSegments = imageToDelete.matchedImageUrl.split("/");
+        imageKey = imageUrlSegments[imageUrlSegments.length - 1];
+        apiUrl = `${process.env.REACT_APP_API}/events/${eventId}/matchdelete`;
+  
+        updatedImages = matchedImages.filter((_, index) => index !== selectedImageIndex);
+      }
+  
       axios
-        .delete(
-          `${process.env.REACT_APP_API}/events/${eventId}/gallery/${imageIdToDelete}`
-        )
+        .delete(apiUrl, {
+          data: {
+            userId: userId,
+            imageKey: imageKey
+          }
+        })
         .then(() => {
-          // Update the gallery state by removing the deleted image
-          const updatedGalleryImages = galleryImages.filter(
-            (_, index) => index !== selectedImageIndex
-          );
-          setGalleryImages(updatedGalleryImages);
-
+          // Update the state by removing the deleted image
+          if (selectedImageType === 'uploaded') {
+            setGalleryImages(updatedImages);
+          } else {
+            setMatchedImages(updatedImages);
+          }
+  
           // Close the image viewer
           setShowImageViewer(false);
-
+  
           // Show the toast notification
           setShowDeleteToast(true);
         })
@@ -137,6 +154,7 @@ function UploadFile() {
         });
     }
   };
+  
 
   useEffect(() => {
     if (selectedFiles.length > 0) {

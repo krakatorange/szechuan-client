@@ -52,6 +52,33 @@ function CustomNavbar() {
     }
   };
 
+  const drawerRef = useRef(null);
+
+  // Function to close the drawer
+  const closeDrawer = () => {
+    setShowDrawer(false);
+  };
+
+  // Effect to handle clicks outside of the user icon and the drawer
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userIconRef.current && !userIconRef.current.contains(event.target) && 
+          drawerRef.current && !drawerRef.current.contains(event.target)) {
+        closeDrawer();
+      }
+    };
+
+    // Add event listener when the drawer is open
+    if (showDrawer) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    // Cleanup function to remove event listener
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showDrawer]);
+
   // Update drawer position when it's opened
   useEffect(() => {
     if (showDrawer) {
@@ -93,6 +120,7 @@ function CustomNavbar() {
       backgroundColor: '#40a5f3',
       color: '#f4f4f4',
       borderColor: '#40a5f3',
+      padding: '5px',
     },
     userIcon: {
       cursor: 'pointer',
@@ -107,6 +135,7 @@ function CustomNavbar() {
       zIndex: 1,
       transition: 'transform 0.3s ease-out', // Add this line for transition animation
       transform: showDrawer ? 'translateX(0)' : 'translateX(100%)', // Add this line for sliding effect
+      borderRadius: '10px', // Add border radius here
     },
     drawerContent: {
       display: 'flex',
@@ -147,7 +176,7 @@ function CustomNavbar() {
       </Navbar>
 
       {showDrawer && (
-        <div style={{ ...styles.customDrawer, ...drawerStyle }}>
+         <div style={{ ...styles.customDrawer, ...drawerStyle }} ref={drawerRef}>
           <div style={styles.drawerContent}>
             <h5>User Information</h5>
             {user && (
