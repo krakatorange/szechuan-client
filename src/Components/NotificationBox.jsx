@@ -153,6 +153,7 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
             box-shadow: 0px 4px 8px 0px rgba(0, 0, 0, 0.1);
             padding: 8px 12px;
             z-index: 3;
+            border-radius: 5px;
           }
 
           .btn {

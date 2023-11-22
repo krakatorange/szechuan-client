@@ -21,6 +21,7 @@ function Dashboard() {
       .then((response) => {
         Logger.log("Fetched events:", response.data);
         setEvents(response.data);
+        localStorage.setItem('events', JSON.stringify(response.data));
       })
       .catch((error) => {
         Logger.error("Error fetching events:", error);
@@ -28,8 +29,15 @@ function Dashboard() {
   }, [userId]);
 
   useEffect(() => {
+    const cachedEvents = localStorage.getItem('events');
+  
     if (userId) {
-      fetchEvents();
+      if (cachedEvents) {
+        setEvents(JSON.parse(cachedEvents));
+        fetchEvents();
+      } else {
+        fetchEvents();
+      }
     }
   }, [fetchEvents, userId]);
 
@@ -39,8 +47,13 @@ function Dashboard() {
     socket.current = io(process.env.REACT_APP_API);
 
     socket.current.on("event-created", (newEvent) => {
-      setEvents((prevEvents) => [...prevEvents, newEvent]);
+      setEvents((prevEvents) => {
+        const updatedEvents = [...prevEvents, newEvent];
+        localStorage.setItem('events', JSON.stringify(updatedEvents));
+        return updatedEvents;
+      });
     });
+    
 
     socket.current.on("event-deleted", (deletedEventId) => {
       setEvents((prevEvents) =>

@@ -5,7 +5,6 @@ import {
   Card,
   Modal,
   Toast,
-  Carousel,
 } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -15,6 +14,9 @@ import io from "socket.io-client";
 import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
+import * as Dialog from "@radix-ui/react-dialog";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashAlt, faDownload, faClose } from '@fortawesome/free-solid-svg-icons';
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -50,6 +52,9 @@ function UploadFile() {
   });
 
   const galleryUrl = `${window.location.origin}/event/${eventId}`;
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
 
   useEffect(() => {
     // When the component mounts, set the currentEventId in your global state
@@ -73,6 +78,28 @@ function UploadFile() {
     navigator.clipboard.writeText(galleryURL).then(() => {
       setIsURLCopied(true);
     });
+  };
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null); // reset touchEnd to null
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      handleNext(); // your next image function
+    } else if (isRightSwipe) {
+      handlePrevious(); // your previous image function
+    }
   };
 
   const getImageUrlForDownload = (index) => {
@@ -100,52 +127,87 @@ function UploadFile() {
     }
   };
 
-  const handleImageClick = (index, type) => {
+  const handleImageClick = (imageUrl, index, imageType) => {
     setSelectedImageIndex(index);
-    setSelectedImageType(type); // set the type of image clicked
+    setSelectedImageType(imageType); // 'uploaded' or 'matched'
     setShowImageViewer(true);
+  };
+
+  const renderGallery = (images, imageType) => {
+    return images.map((item, index) => {
+      const imageUrl = item.imageUrl || item.matchedImageUrl;
+      return (
+        <div key={index} className="gallery-item">
+          <img
+            src={imageUrl}
+            alt={`Gallery item ${index}`}
+            className="gallery-img"
+            onClick={() => handleImageClick(imageUrl, index, imageType)}
+          />
+        </div>
+      );
+    });
   };
 
   const handleDeleteImage = () => {
     if (selectedImageIndex !== null) {
-      let apiUrl = '';
-      let imageKey = '';
+      let apiUrl = "";
+      let imageKey = "";
       let updatedImages = [];
-  
-      if (selectedImageType === 'uploaded') {
+
+      if (selectedImageType === "uploaded") {
         const imageToDelete = galleryImages[selectedImageIndex];
         const imageUrlSegments = imageToDelete.imageUrl.split("/");
         imageKey = imageUrlSegments[imageUrlSegments.length - 1];
         apiUrl = `${process.env.REACT_APP_API}/events/${eventId}/gallery/${imageKey}`;
-  
-        updatedImages = galleryImages.filter((_, index) => index !== selectedImageIndex);
-      } else if (selectedImageType === 'matched') {
+
+        updatedImages = galleryImages.filter(
+          (_, index) => index !== selectedImageIndex
+        );
+      } else if (selectedImageType === "matched") {
         const imageToDelete = matchedImages[selectedImageIndex];
         const imageUrlSegments = imageToDelete.matchedImageUrl.split("/");
         imageKey = imageUrlSegments[imageUrlSegments.length - 1];
+        const renderGallery = (images) => {
+          return images.map((item, index) => {
+            const imageUrl = item.imageUrl || item.matchedImageUrl;
+            return (
+              <div key={index} className="gallery-item">
+                <img
+                  src={imageUrl}
+                  alt={`Gallery item ${index}`}
+                  className="gallery-img"
+                  onClick={() => handleImageClick(imageUrl, index)}
+                />
+              </div>
+            );
+          });
+        };
         apiUrl = `${process.env.REACT_APP_API}/events/${eventId}/matchdelete`;
-  
-        updatedImages = matchedImages.filter((_, index) => index !== selectedImageIndex);
+
+        updatedImages = matchedImages.filter(
+          (_, index) => index !== selectedImageIndex
+        );
       }
-  
+
       axios
         .delete(apiUrl, {
           data: {
             userId: userId,
-            imageKey: imageKey
-          }
+            imageKey: imageKey,
+          },
         })
         .then(() => {
           // Update the state by removing the deleted image
-          if (selectedImageType === 'uploaded') {
+          if (selectedImageType === "uploaded") {
             setGalleryImages(updatedImages);
           } else {
             setMatchedImages(updatedImages);
           }
-  
+
           // Close the image viewer
           setShowImageViewer(false);
-  
+
           // Show the toast notification
           setShowDeleteToast(true);
         })
@@ -154,7 +216,6 @@ function UploadFile() {
         });
     }
   };
-  
 
   useEffect(() => {
     if (selectedFiles.length > 0) {
@@ -398,6 +459,18 @@ function UploadFile() {
     );
   }
 
+  const handleNext = () => {
+    setSelectedImageIndex((prevIndex) =>
+      prevIndex === galleryImages.length - 1 ? 0 : prevIndex + 1
+    );
+  };
+
+  const handlePrevious = () => {
+    setSelectedImageIndex((prevIndex) =>
+      prevIndex === 0 ? galleryImages.length - 1 : prevIndex - 1
+    );
+  };
+
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
     padding: "0", // maintains a small padding on the sides
@@ -564,127 +637,69 @@ function UploadFile() {
         />
       </div>
 
-      <div
-        className="gallery mt-4"
-        style={{ marginLeft: "15px", marginRight: "15px" }}
-      >
+      <div className="gallery mt-4">
         {showAllPhotos
-          ? galleryImages.map((item, index) => (
-              <div
-                key={index}
-                className="gallery-item"
-                onClick={() => handleImageClick(index, "uploaded")}
-              >
-                <img
-                  src={item.imageUrl}
-                  alt={`Uploaded ${index}`}
-                  className="mb-2 mb-md-4 shadow-1-strong rounded"
-                />
-              </div>
-            ))
-          : matchedImages.map((item, index) => (
-              <div
-                key={index}
-                className="gallery-item"
-                onClick={() => handleImageClick(index, "matched")}
-              >
-                <img
-                  src={item.matchedImageUrl}
-                  alt={`Matched ${index}`}
-                  className="shadow-1-strong rounded"
-                />
-              </div>
-            ))}
+          ? renderGallery(galleryImages, "uploaded")
+          : renderGallery(matchedImages, "matched")}
       </div>
+
       {/* Image Viewer Modal as Lightbox */}
       {selectedImageIndex !== null && (
-        <Modal
-          show={showImageViewer}
-          onHide={() => {
-            setShowImageViewer(false);
-            setSelectedImageType(null);
-            setShowMenu(false); // Reset the delete button state here
-          }}
-          centered
-          size="xl"
-          dialogClassName="lightbox-modal"
-        >
-          <Modal.Body>
-            <Carousel
-              activeIndex={selectedImageIndex}
-              onSelect={(selectedIndex, e) => {
-                setSelectedImageIndex(selectedIndex);
-                setShowMenu(false); // Reset the delete button state here
-              }}
-              interval={null}
-              nextLabel=""
-              prevLabel=""
-              indicators={false}
-              touch={true}
+        <Dialog.Root open={showImageViewer} onOpenChange={setShowImageViewer}>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              className="dialog-overlay"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
             >
-              {(selectedImageType === "uploaded"
-                ? galleryImages
-                : matchedImages
-              ).map((item, index) => (
-                <Carousel.Item key={index}>
-                  <img
-                    src={
-                      selectedImageType === "uploaded"
-                        ? item.imageUrl
-                        : item.matchedImageUrl
+              <Dialog.Content className="dialog-content">
+                <img
+                  src={
+                    selectedImageType === "uploaded"
+                      ? galleryImages[selectedImageIndex]?.imageUrl
+                      : matchedImages[selectedImageIndex]?.matchedImageUrl
+                  }
+                  alt={`Image ${selectedImageIndex}`}
+                  className="lightbox-image"
+                />
+                <div className="dialog-controls">
+                  <Dialog.Close className="icon-button close-icon">
+                  <FontAwesomeIcon icon={faClose} />
+                  </Dialog.Close>
+                  <button
+                    className="icon-button delete-icon"
+                    onClick={handleDeleteImage}
+                  >
+                    <FontAwesomeIcon icon={faTrashAlt} />
+                  </button>
+                  <button
+                    className="icon-button download-icon"
+                    onClick={() =>
+                      downloadImage(getImageUrlForDownload(selectedImageIndex))
                     }
-                    alt={`Image ${index}`}
-                    className="d-block w-100 lightbox-image"
-                  />
-                  {isAdmin && ( // Conditionally render the three-dot menu for admins
-                    <div className="lightbox-menu">
-                      <button
-                      className="delete-btn"
-                      title="Delete Image"
-                      onClick={() => handleDeleteImage(index)}
-                    >
-                      {/* SVG for the delete icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="white"
-                        viewBox="0 0 24 24"
-                      >
-                        {/* Update the path for the delete icon */}
-                        <path d="M3 6v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6h-4.18l-1.82-2H9L7.18 6H3zm16 14H5V8h14v12zm-7-9v6h-2v-6h2zm4 0v6h-2v-6h2zm-8 0v6H6v-6h2z"/>
-                      </svg>
-                    </button>
-                    </div>
-                  )}
-                  <div className="lightbox-download-menu">
-                    <button
-                      className="download-btn"
-                      title="Download Image"
-                      onClick={() =>
-                        downloadImage(
-                          getImageUrlForDownload(selectedImageIndex)
-                        )
-                      }
-                    >
-                      {/* SVG for the download icon */}
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
-                        fill="white"
-                        viewBox="0 0 24 24"
-                      >
-                        <path d="M12 15l4-5h-3V0H11v10H8l4 5zM4 22h16v2H4z" />
-                      </svg>
-                    </button>
-                  </div>
-                </Carousel.Item>
-              ))}
-            </Carousel>
-          </Modal.Body>
-        </Modal>
+                  >
+                  <FontAwesomeIcon icon={faDownload} />
+                  </button>
+                </div>
+                <button
+                  className="icon-button left-arrow"
+                  onClick={handlePrevious}
+                >
+                  ←
+                </button>
+                <button
+                  className="icon-button right-arrow"
+                  onClick={handleNext}
+                >
+                  →
+                </button>
+              </Dialog.Content>
+            </Dialog.Overlay>
+          </Dialog.Portal>
+        </Dialog.Root>
       )}
+
       <Toast
         style={{
           position: "fixed", // Change from "absolute" to "fixed"
@@ -805,50 +820,119 @@ function UploadFile() {
           }
 
           /* CSS in your stylesheet or <style> tag */
-.gallery {
-  column-count: 6;
-  column-gap: 10px;
-}
+          .gallery {
+            padding: 10px;
+            column-count: 6;
+            column-gap: 5px;
+          }
+          
+          .gallery-item {
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            border-radius: 1%;
+            break-inside: avoid; /* Prevents items from splitting across columns */
+            margin-bottom: 5px; 
+          }
 
-.gallery-item {
-  break-inside: avoid;
-  margin-bottom: 15px;
-  display: inline-block;
-  width: 100%;
-  position: relative; /* Needed for absolute positioning of the image */
-  overflow: hidden;
-}
-
-/* Responsive adjustments */
-@media (max-width: 1200px) {
-  .gallery {
-    column-count: 4;
-  }
-}
-
-@media (max-width: 992px) {
-  .gallery {
-    column-count: 3;
-  }
-}
-
-@media (max-width: 768px) {
-  .gallery {
-    column-count: 2;
-  }
-}
-
-@media (max-width: 576px) {
-  .gallery {
-    column-count: 1;
-  }
-}
-
-.gallery-item img {
-  width: 100%;
-  display: block;
-  border-radius: 4px;
-}
+          @media (max-width: 767px) {
+            .gallery {
+              column-count: 1; /* fewer columns for smaller screens */
+            }
+          }
+          
+          .gallery-img {
+            width: 100%;
+            height: auto;
+            transition: transform 0.3s ease;
+            display: block; 
+          }
+          
+          .gallery-item:hover .gallery-img {
+            transform: scale(1.1);
+          }
+          
+          .dialog-overlay {
+            background-color: rgba(0, 0, 0, 0.8);
+            position: fixed;
+            inset: 0;
+          }
+          
+          .dialog-content {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90vw;
+            max-height: 90vh;
+            background-color: transparent;
+            border: none;
+          }
+          
+          .lightbox-image {
+            max-width: 100%;
+            max-height: 80vh;
+            display: block;
+            border-radius: 2%;
+          }
+          
+          .dialog-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+          }
+          
+          .icon-button {
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 20%;
+            font-size: 15px;
+          }
+          
+          .left-arrow, .right-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 14px;
+            border-radius: 20%;
+          }
+          
+          /* Adjust the arrow size and position */
+          .left-arrow { left: 20px; }
+          .right-arrow { right: 20px; }
+          
+          /* Style adjustments for mobile devices */
+          @media (max-width: 767px) {
+            .dialog-content {
+              width: 100%; /* Use 'auto' to fit the image width */
+              height: auto; /* Use 'auto' to fit the image height */
+            }
+          
+            /* Adjust max height for mobile */
+            .lightbox-image {
+              max-width: 100%; /* Adjust max width for mobile */
+              max-height: 80vh; /* Adjust max height for mobile */
+              margin: 0 auto; /* Center the image horizontally */
+            }
+          
+            /* Hide the left and right arrows for mobile */
+            .left-arrow, .right-arrow {
+              display: none;
+            }
+          }
+          
 
 /* Mobile devices */
 @media (max-width: 767px) { 
