@@ -5,7 +5,6 @@ import {
   Card,
   Modal,
   Toast,
-  Carousel,
 } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
@@ -16,6 +15,8 @@ import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
 import * as Dialog from "@radix-ui/react-dialog";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faTrashAlt, faDownload, faClose } from '@fortawesome/free-solid-svg-icons';
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -664,13 +665,13 @@ function UploadFile() {
                 />
                 <div className="dialog-controls">
                   <Dialog.Close className="icon-button close-icon">
-                    X
+                  <FontAwesomeIcon icon={faClose} />
                   </Dialog.Close>
                   <button
                     className="icon-button delete-icon"
                     onClick={handleDeleteImage}
                   >
-                    D
+                    <FontAwesomeIcon icon={faTrashAlt} />
                   </button>
                   <button
                     className="icon-button download-icon"
@@ -678,7 +679,7 @@ function UploadFile() {
                       downloadImage(getImageUrlForDownload(selectedImageIndex))
                     }
                   >
-                    ↓
+                  <FontAwesomeIcon icon={faDownload} />
                   </button>
                 </div>
                 <button
