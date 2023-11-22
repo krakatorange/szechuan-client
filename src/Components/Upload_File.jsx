@@ -126,13 +126,13 @@ function UploadFile() {
     }
   };
 
-  const handleImageClick = (imageUrl, index) => {
+  const handleImageClick = (imageUrl, index, imageType) => {
     setSelectedImageIndex(index);
-    setSelectedImageType(imageUrl.includes("matched") ? "matched" : "uploaded");
+    setSelectedImageType(imageType); // 'uploaded' or 'matched'
     setShowImageViewer(true);
   };
 
-  const renderGallery = (images) => {
+  const renderGallery = (images, imageType) => {
     return images.map((item, index) => {
       const imageUrl = item.imageUrl || item.matchedImageUrl;
       return (
@@ -141,13 +141,12 @@ function UploadFile() {
             src={imageUrl}
             alt={`Gallery item ${index}`}
             className="gallery-img"
-            onClick={() => handleImageClick(imageUrl, index)}
+            onClick={() => handleImageClick(imageUrl, index, imageType)}
           />
         </div>
       );
     });
   };
-  
 
   const handleDeleteImage = () => {
     if (selectedImageIndex !== null) {
@@ -639,8 +638,8 @@ function UploadFile() {
 
       <div className="gallery mt-4">
         {showAllPhotos
-          ? renderGallery(galleryImages)
-          : renderGallery(matchedImages)}
+          ? renderGallery(galleryImages, "uploaded")
+          : renderGallery(matchedImages, "matched")}
       </div>
 
       {/* Image Viewer Modal as Lightbox */}
