@@ -833,6 +833,12 @@ function UploadFile() {
             break-inside: avoid; /* Prevents items from splitting across columns */
             margin-bottom: 5px; 
           }
+
+          @media (max-width: 767px) {
+            .gallery {
+              column-count: 1; /* fewer columns for smaller screens */
+            }
+          }
           
           .gallery-img {
             width: 100%;
