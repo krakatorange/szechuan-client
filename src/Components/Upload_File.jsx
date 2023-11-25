@@ -505,6 +505,28 @@ function UploadFile() {
     );
   };
 
+  const handleClickOutside = (event) => {
+    if (!event.target.closest('.sorting-dropdown')) {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDropdownOpen) {
+      // Attach the event listener
+      document.addEventListener('click', handleClickOutside);
+    } else {
+      // Remove the event listener
+      document.removeEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      // Clean up
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
+
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
     padding: "0", // maintains a small padding on the sides
