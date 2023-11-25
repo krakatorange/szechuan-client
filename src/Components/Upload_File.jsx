@@ -1,11 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {
-  Container,
-  Button,
-  Card,
-  Modal,
-  Toast,
-} from "react-bootstrap";
+import { Container, Button, Card, Modal, Toast } from "react-bootstrap";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { useUserAuth } from "../UserContextProvider";
@@ -15,8 +9,12 @@ import QRCode from "qrcode.react"; // Import QRCode
 import Logger from "../logger";
 import { useDirectoryPoller } from "../DirectoryPollerContext";
 import * as Dialog from "@radix-ui/react-dialog";
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrashAlt, faDownload, faClose } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faTrashAlt,
+  faDownload,
+  faClose,
+} from "@fortawesome/free-solid-svg-icons";
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -55,6 +53,8 @@ function UploadFile() {
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
   const minSwipeDistance = 50;
+  const [sortOrder, setSortOrder] = useState("none"); // 'asc', 'desc', or 'none'
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     // When the component mounts, set the currentEventId in your global state
@@ -64,6 +64,10 @@ function UploadFile() {
   const handleFileInputChange = (event) => {
     const files = Array.from(event.target.files);
     uploadFiles(files);
+  };
+
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
   };
 
   const toggleDirectoryPoller = () => {
@@ -102,6 +106,21 @@ function UploadFile() {
     }
   };
 
+  const sortImages = (images) => {
+    let sorted = [...images]; // Create a new array to sort
+    if (sortOrder === "asc") {
+      sorted.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    } else if (sortOrder === "desc") {
+      sorted.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    }
+    return sorted;
+  };
+
+  useEffect(() => {
+    const sortedImages = sortImages(galleryImages);
+    setGalleryImages(sortedImages);
+  }, [sortOrder]);
+
   const getImageUrlForDownload = (index) => {
     const image =
       selectedImageType === "uploaded"
@@ -134,7 +153,10 @@ function UploadFile() {
   };
 
   const renderGallery = (images, imageType) => {
-    return images.map((item, index) => {
+    console.log("Before sorting:", images);
+    const sortedImages = sortImages(images);
+    console.log("After sorting:", sortedImages);
+    return sortedImages.map((item, index) => {
       const imageUrl = item.imageUrl || item.matchedImageUrl;
       return (
         <div key={index} className="gallery-item">
@@ -301,7 +323,11 @@ function UploadFile() {
         axios
           .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
           .then((response) => {
-            setGalleryImages(response.data);
+            const formattedImages = response.data.map((img) => ({
+              imageUrl: img.imageUrl, // or simply img.imageUrl if the API sends it as imageUrl
+              timestamp: img.timestamp,
+            }));
+            setGalleryImages(formattedImages);
           })
           .catch((error) => {
             Logger.error("Error fetching gallery images: ", error);
@@ -378,7 +404,11 @@ function UploadFile() {
       axios
         .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
         .then((response) => {
-          setGalleryImages(response.data);
+          const formattedImages = response.data.map((img) => ({
+            imageUrl: img.imageUrl, // or simply img.imageUrl if the API sends it as imageUrl
+            timestamp: img.timestamp,
+          }));
+          setGalleryImages(formattedImages);
         })
         .catch((error) => {
           Logger.error("Error fetching gallery images: ", error);
@@ -388,7 +418,11 @@ function UploadFile() {
     axios
       .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
       .then((response) => {
-        setGalleryImages(response.data);
+        const formattedImages = response.data.map((img) => ({
+          imageUrl: img.imageUrl, // or simply img.imageUrl if the API sends it as imageUrl
+          timestamp: img.timestamp,
+        }));
+        setGalleryImages(formattedImages);
       })
       .catch((error) => {
         Logger.error("Error fetching gallery images: ", error);
@@ -470,6 +504,28 @@ function UploadFile() {
       prevIndex === 0 ? galleryImages.length - 1 : prevIndex - 1
     );
   };
+
+  const handleClickOutside = (event) => {
+    if (!event.target.closest('.sorting-dropdown')) {
+      setIsDropdownOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isDropdownOpen) {
+      // Attach the event listener
+      document.addEventListener('click', handleClickOutside);
+    } else {
+      // Remove the event listener
+      document.removeEventListener('click', handleClickOutside);
+    }
+
+    return () => {
+      // Clean up
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
 
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
@@ -561,13 +617,37 @@ function UploadFile() {
           </Button>
         </Modal.Footer>
       </Modal>
+
       <div className="d-flex justify-content-end mt-3">
+         <div className="sorting-dropdown">
+          <Button
+            variant="primary"
+            className="dropdown-toggle"
+            id="dropdown-basic-button"
+            title="Sort Images"
+            onClick={toggleDropdown} // Added onClick event
+          >
+            Sort Images
+          </Button>
+
+          <div
+            className={`dropdown-menu ${isDropdownOpen ? 'show' : ''}`}
+            aria-labelledby="dropdown-basic-button"
+          >
+            <Button className="dropdown-item" onClick={() => setSortOrder("asc")}>
+              Sort Ascending
+            </Button>
+            <Button className="dropdown-item" onClick={() => setSortOrder("desc")}>
+              Sort Descending
+            </Button>
+          </div>
+        </div>
         {isAdmin && (
           <Button
             variant="primary"
             className="btn-md"
             onClick={handleUploadButtonClick}
-            style={{ borderRadius: "20px", backgroundColor: " #40a5f3" }}
+            style={{ borderRadius: "10px", backgroundColor: " #40a5f3" }}
           >
             Upload Image
           </Button>
@@ -613,8 +693,8 @@ function UploadFile() {
             className="btn-md"
             onClick={toggleDirectoryPoller}
             style={{
-              marginLeft: "10px",
-              borderRadius: "20px",
+              marginLeft: "5px",
+              borderRadius: "10px",
               backgroundColor: " #40a5f3",
               marginRight: "25px",
             }}
@@ -665,7 +745,7 @@ function UploadFile() {
                 />
                 <div className="dialog-controls">
                   <Dialog.Close className="icon-button close-icon">
-                  <FontAwesomeIcon icon={faClose} />
+                    <FontAwesomeIcon icon={faClose} />
                   </Dialog.Close>
                   <button
                     className="icon-button delete-icon"
@@ -679,7 +759,7 @@ function UploadFile() {
                       downloadImage(getImageUrlForDownload(selectedImageIndex))
                     }
                   >
-                  <FontAwesomeIcon icon={faDownload} />
+                    <FontAwesomeIcon icon={faDownload} />
                   </button>
                 </div>
                 <button
@@ -764,22 +844,22 @@ function UploadFile() {
           }
           
           .lightbox-modal .modal-content {
-  background: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
-  border: none;
-}
+            background: rgba(0, 0, 0, 0.5); /* Semi-transparent black background */
+            border: none;
+          }
 
-.lightbox-image {
-  max-height: 80vh; /* Limit image height to fit the screen */
-  object-fit: contain; /* Ensure the image fits within the element */
-  background-color: #000; /* Black background to fill empty space */
-}
+          .lightbox-image {
+            max-height: 80vh; /* Limit image height to fit the screen */
+            object-fit: contain; /* Ensure the image fits within the element */
+            background-color: #000; /* Black background to fill empty space */
+          }
 
-.lightbox-menu {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 1050; /* This should be higher than the z-index of the carousel controls */
-}
+          .lightbox-menu {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1050; /* This should be higher than the z-index of the carousel controls */
+          }
 
 
 
@@ -873,7 +953,6 @@ function UploadFile() {
             max-width: 100%;
             max-height: 80vh;
             display: block;
-            border-radius: 2%;
           }
           
           .dialog-controls {
@@ -934,27 +1013,92 @@ function UploadFile() {
           }
           
 
-/* Mobile devices */
-@media (max-width: 767px) { 
+          /* Mobile devices */
+          @media (max-width: 767px) { 
 
-  .cover-photo { 
-    height: 250px; /* Rectangle shape for mobile */
-  }
-}
+            .cover-photo { 
+              height: 250px; /* Rectangle shape for mobile */
+            }
+          }
 
-/* Tablets and up */
-@media (min-width: 768px) { 
-  .cover-photo{ 
-    height: 400px; /* Slightly larger for tablets */
-  }
-}
+          /* Tablets and up */
+          @media (min-width: 768px) { 
+            .cover-photo{ 
+              height: 400px; /* Slightly larger for tablets */
+            }
+          }
 
-/* Desktops and up */
-@media (min-width: 992px) { 
-  .cover-photo { 
-    height: 600px; /* Standard size for desktops */
-  }
-}
+          /* Desktops and up */
+          @media (min-width: 992px) { 
+            .cover-photo { 
+              height: 600px; /* Standard size for desktops */
+            }
+          }
+          .sorting-dropdown {
+            position: relative;
+            margin-right: auto; /* Aligns the dropdown to the far left of the flex container */
+            margin-left: 20px; /* Adds a margin to the left */
+          }
+          
+          .dropdown-toggle {
+            background-color: #40a5f3;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1rem;
+          }
+          
+          .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            display: none;
+            min-width: 160px;
+            padding: 5px 0;
+            margin: 2px 0 0;
+            font-size: 1rem;
+            color: #333;
+            text-align: left;
+            list-style: none;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.15);
+            border-radius: 5px;
+            box-shadow: 0 6px 12px rgba(0,0,0,.175);
+          }
+          
+          /* Hover state for both button and dropdown menu */
+          .sorting-dropdown:hover .dropdown-toggle,
+          .sorting-dropdown:hover .dropdown-menu {
+            display: block;
+          }
+          
+          .dropdown-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+          }
+          
+          .dropdown-item:hover {
+            background-color: #f8f9fa;
+          }
+          
+          @media (max-width: 767px) {
+            .btn-md, .dropdown-toggle, .dropdown-item {
+              padding: 5px 10px;
+              font-size: 0.8rem;
+              border-radius: 15px;
+            }
+          
+            .dropdown-menu.show {
+              display: block;
+            }
+          }
+          
+          
           
         `}
       </style>
