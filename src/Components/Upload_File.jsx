@@ -27,6 +27,7 @@ function UploadFile() {
   const { user, isAdmin } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const {
     setCurrentEventId,
     showMonitorImages,
@@ -131,16 +132,18 @@ function UploadFile() {
 
   const downloadImage = async (url) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const localUrl = URL.createObjectURL(blob);
+      const response = await axios.get(url, { responseType: "blob" });
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = localUrl;
-      link.download = "downloaded-image"; // You can set a specific filename here
+      link.href = downloadUrl;
+      link.setAttribute("download", "image.jpg"); // Use a specific filename or derive it
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(localUrl);
+      window.URL.revokeObjectURL(downloadUrl);
+      link.remove();
     } catch (error) {
       console.error("Error downloading the image:", error);
     }
@@ -153,9 +156,7 @@ function UploadFile() {
   };
 
   const renderGallery = (images, imageType) => {
-    console.log("Before sorting:", images);
     const sortedImages = sortImages(images);
-    console.log("After sorting:", sortedImages);
     return sortedImages.map((item, index) => {
       const imageUrl = item.imageUrl || item.matchedImageUrl;
       return (
@@ -237,6 +238,19 @@ function UploadFile() {
           Logger.error("Error deleting image:", error);
         });
     }
+  };
+
+  const confirmDeleteImage = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const proceedWithDelete = () => {
+    setShowDeleteConfirmation(false);
+    handleDeleteImage(); // Your existing delete function
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
   };
 
   useEffect(() => {
@@ -506,7 +520,7 @@ function UploadFile() {
   };
 
   const handleClickOutside = (event) => {
-    if (!event.target.closest('.sorting-dropdown')) {
+    if (!event.target.closest(".sorting-dropdown")) {
       setIsDropdownOpen(false);
     }
   };
@@ -514,18 +528,17 @@ function UploadFile() {
   useEffect(() => {
     if (isDropdownOpen) {
       // Attach the event listener
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     } else {
       // Remove the event listener
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     }
 
     return () => {
       // Clean up
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [isDropdownOpen]);
-
 
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
@@ -619,7 +632,7 @@ function UploadFile() {
       </Modal>
 
       <div className="d-flex justify-content-end mt-3">
-         <div className="sorting-dropdown">
+        <div className="sorting-dropdown">
           <Button
             variant="primary"
             className="dropdown-toggle"
@@ -631,13 +644,19 @@ function UploadFile() {
           </Button>
 
           <div
-            className={`dropdown-menu ${isDropdownOpen ? 'show' : ''}`}
+            className={`dropdown-menu ${isDropdownOpen ? "show" : ""}`}
             aria-labelledby="dropdown-basic-button"
           >
-            <Button className="dropdown-item" onClick={() => setSortOrder("asc")}>
+            <Button
+              className="dropdown-item"
+              onClick={() => setSortOrder("asc")}
+            >
               Sort Ascending
             </Button>
-            <Button className="dropdown-item" onClick={() => setSortOrder("desc")}>
+            <Button
+              className="dropdown-item"
+              onClick={() => setSortOrder("desc")}
+            >
               Sort Descending
             </Button>
           </div>
@@ -749,10 +768,11 @@ function UploadFile() {
                   </Dialog.Close>
                   <button
                     className="icon-button delete-icon"
-                    onClick={handleDeleteImage}
+                    onClick={confirmDeleteImage}
                   >
                     <FontAwesomeIcon icon={faTrashAlt} />
                   </button>
+
                   <button
                     className="icon-button download-icon"
                     onClick={() =>
@@ -797,6 +817,41 @@ function UploadFile() {
         </Toast.Header>
         <Toast.Body>Image successfully deleted!</Toast.Body>
       </Toast>
+      {showDeleteConfirmation && (
+        <Toast
+          onClose={cancelDelete}
+          show={showDeleteConfirmation}
+          delay={10000}
+          autohide={false}
+          style={{
+            position: "fixed",
+            top: "50%", // Center vertically
+            left: "50%", // Center horizontally
+            transform: "translate(-50%, -50%)", // Adjust for exact centering
+            zIndex: 1050, // Ensure it's above other elements
+            minWidth: "300px", // Optional: Set a minimum width
+          }}
+        >
+          <Toast.Header>
+            <strong className="mr-auto">Confirm Delete</strong>
+          </Toast.Header>
+          <Toast.Body>
+            Are you sure you want to delete this image?
+            <div className="mt-2 text-center">
+              <Button variant="danger" onClick={proceedWithDelete}>
+                Yes
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={cancelDelete}
+                style={{ marginLeft: "10px" }}
+              >
+                No
+              </Button>
+            </div>
+          </Toast.Body>
+        </Toast>
+      )}
       <style>
         {`
           /* CSS styles for the gallery */
