@@ -2,16 +2,18 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import { Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import io from "socket.io-client";
+import PQueue from 'p-queue';
 import Logger from "../logger";
-import { DirectoryPollerContext } from "../DirectoryPollerContext"; // adjust the import path accordingly
+import { DirectoryPollerContext } from "../DirectoryPollerContext";
 
 function MonitorImages({ show, onHide, eventId }) {
-
   const [loading, setLoading] = useState(false);
-  const [showTick, setShowTick] = useState(false); // New state for showing the tick
+  const [showTick, setShowTick] = useState(false);
   const socketRef = useRef(null);
   const [isInputDisabled, setIsInputDisabled] = useState(false);
   const uploadInterval = useRef(null);
+  const uploadQueue = useRef(new PQueue({ concurrency: 5 })); // Manage concurrency
+  const uploadedImageHash = useRef({});
   const {
     url,
     setUrl,
@@ -21,9 +23,7 @@ function MonitorImages({ show, onHide, eventId }) {
     setUploadedImages,
     isUploading,
     setIsUploading,
-    //isPollerRunning,
     setIsPollerRunning,
-    // ... other states and functions from context
   } = useContext(DirectoryPollerContext);
 
   const monitorImages = async () => {
@@ -31,21 +31,13 @@ function MonitorImages({ show, onHide, eventId }) {
     try {
       const response = await axios.get(
         `${process.env.REACT_APP_API}/events/fetch-external-resource`,
-        {
-          params: {
-            externalResourceUrl: url,
-          },
-        }
+        { params: { externalResourceUrl: url } }
       );
 
       const data = response.data;
       if (data.image_urls && Array.isArray(data.image_urls)) {
-        setNewImages((prevNewImages) => {
-          const newDetectedImages = data.image_urls.filter(
-            (img) => !prevNewImages.includes(img)
-          );
-          return [...prevNewImages, ...newDetectedImages];
-        });
+        const uniqueNewImages = data.image_urls.filter(img => !uploadedImageHash.current[img]);
+        setNewImages(prevNewImages => [...prevNewImages, ...uniqueNewImages]);
       } else {
         Logger.error("Unexpected response format");
       }
@@ -56,61 +48,46 @@ function MonitorImages({ show, onHide, eventId }) {
     }
   };
 
-  const uploadImages = async () => {
-    for (const imageSrc of newImages) {
-      if (!uploadedImages.includes(imageSrc)) {
-        try {
-          const response = await axios.get(
-            `${process.env.REACT_APP_API}/events/fetch-image`,
-            {
-              params: {
-                imageUrl: imageSrc,
-              },
-              responseType: "arraybuffer",
-            }
-          );
+  const uploadImage = async (imageSrc) => {
+    try {
+      const response = await axios.get(
+        `${process.env.REACT_APP_API}/events/fetch-image`,
+        { params: { imageUrl: imageSrc }, responseType: "arraybuffer" }
+      );
 
-          const blob = new Blob([response.data], { type: "image/jpeg" });
+      const blob = new Blob([response.data], { type: "image/jpeg" });
+      const formData = new FormData();
+      const imageName = imageSrc.split("/").pop().split("?")[0];
+      formData.append("galleryImage", blob, imageName);
 
-          const formData = new FormData();
-          const imageName = imageSrc.split("/").pop().split("?")[0];
-          formData.append("galleryImage", blob, imageName);
+      await axios.post(
+        `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
 
-          await axios.post(
-            `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          );
-
-          Logger.log(`Image ${imageName} uploaded successfully!`);
-
-          setUploadedImages((prevImages) => [...prevImages, imageSrc]);
-          setNewImages((prevNewImages) =>
-            prevNewImages.filter((img) => img !== imageSrc)
-          );
-
-          // Show the tick when an image is uploaded
-          setShowTick(true);
-          setTimeout(() => setShowTick(false), 2000); // Hide the tick after 2 seconds
-        } catch (error) {
-          Logger.error("Error uploading image:", error);
-        }
-      }
+      setUploadedImages(prev => [...prev, imageSrc]);
+      Logger.log("image uploaded")
+      uploadedImageHash.current[imageSrc] = true; // Mark as uploaded
+    } catch (error) {
+      Logger.error("Error uploading image:", error);
     }
+  };
+
+  const uploadImages = () => {
+    newImages.forEach(imageSrc => {
+      if (!uploadedImageHash.current[imageSrc]) {
+        uploadedImageHash.current[imageSrc] = false; // Mark as in process
+        uploadQueue.current.add(() => uploadImage(imageSrc));
+      }
+    });
   };
 
   const startMonitoringAndUploading = () => {
     setIsPollerRunning(true);
     setIsUploading(true);
     setIsInputDisabled(true);
-
-    uploadInterval.current = setInterval(async () => {
-      await monitorImages();
-    }, 5000); // Check every 5 seconds
+    uploadInterval.current = setInterval(monitorImages, 5000);
   };
 
   const stopUploading = () => {
@@ -118,33 +95,23 @@ function MonitorImages({ show, onHide, eventId }) {
     setIsUploading(false);
     setIsInputDisabled(false);
     clearInterval(uploadInterval.current);
+    uploadQueue.current.clear();
+    uploadedImageHash.current = {};
+    setNewImages([]);
+    setUploadedImages([]);
   };
 
   useEffect(() => {
-    // Establish the socket connection
     socketRef.current = io(process.env.REACT_APP_API);
-
-    // Set up the event listener for 'new-image'
-    socketRef.current.on("new-image", (data) => {
-      // Handle the new image data as needed
-      Logger.log("New image:", data.imageUrl);
-      // You can add the new image URL to your state if needed
-      // setGalleryImages(prevImages => [...prevImages, data.imageUrl]);
-    });
-
-    // Clean up the socket connection when the component is unmounted
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.disconnect();
-      }
-    };
+    socketRef.current.on("new-image", (data) => Logger.log("New image:", data.imageUrl));
+    return () => { if (socketRef.current) socketRef.current.disconnect(); };
   }, []);
 
   useEffect(() => {
     if (isUploading) {
       uploadImages();
     }
-  }, [newImages]);
+  }, [newImages, isUploading]);
 
   return (
     <Modal

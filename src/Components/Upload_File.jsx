@@ -14,6 +14,8 @@ import {
   faTrashAlt,
   faDownload,
   faClose,
+  faSort,
+  faTasks,
 } from "@fortawesome/free-solid-svg-icons";
 
 function UploadFile() {
@@ -27,6 +29,7 @@ function UploadFile() {
   const { user, isAdmin } = useUserAuth();
   const userId = user?.uid;
   const fileInputRef = useRef(null);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const {
     setCurrentEventId,
     showMonitorImages,
@@ -48,7 +51,8 @@ function UploadFile() {
     error: null,
     exists: false,
   });
-
+  const [isMultiSelectMode, setIsMultiSelectMode] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
   const galleryUrl = `${window.location.origin}/event/${eventId}`;
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
@@ -131,39 +135,86 @@ function UploadFile() {
 
   const downloadImage = async (url) => {
     try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const localUrl = URL.createObjectURL(blob);
+      const response = await axios.get(url, { responseType: "blob" });
+      const blob = new Blob([response.data], {
+        type: response.headers["content-type"],
+      });
+      const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = localUrl;
-      link.download = "downloaded-image"; // You can set a specific filename here
+      link.href = downloadUrl;
+      link.setAttribute("download", "image.jpg"); // Use a specific filename or derive it
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(localUrl);
+      window.URL.revokeObjectURL(downloadUrl);
+      link.remove();
     } catch (error) {
       console.error("Error downloading the image:", error);
     }
   };
 
+  const enterMultiSelectMode = () => {
+    setIsMultiSelectMode(true);
+    setSelectedImages([]);
+  };
+
+  const toggleImageSelection = (index, imageType) => {
+    const isSelected = selectedImages.some(
+      (img) => img.index === index && img.imageType === imageType
+    );
+    if (isSelected) {
+      setSelectedImages(
+        selectedImages.filter(
+          (img) => img.index !== index || img.imageType !== imageType
+        )
+      );
+    } else {
+      setSelectedImages([...selectedImages, { index, imageType }]);
+    }
+  };
+
+  const downloadSelectedImages = () => {
+    selectedImages.forEach((img) => {
+      const imageUrl =
+        img.imageType === "uploaded"
+          ? galleryImages[img.index].imageUrl
+          : matchedImages[img.index].matchedImageUrl;
+      downloadImage(imageUrl);
+    });
+  };
+
+  const exitMultiSelectMode = () => {
+    setIsMultiSelectMode(false);
+    setSelectedImages([]);
+  };
+
   const handleImageClick = (imageUrl, index, imageType) => {
-    setSelectedImageIndex(index);
-    setSelectedImageType(imageType); // 'uploaded' or 'matched'
-    setShowImageViewer(true);
+    if (isMultiSelectMode) {
+      toggleImageSelection(index, imageType);
+    } else {
+      // Your existing logic for opening the image viewer
+      setSelectedImageIndex(index);
+      setSelectedImageType(imageType); // 'uploaded' or 'matched'
+      setShowImageViewer(true);
+    }
   };
 
   const renderGallery = (images, imageType) => {
-    console.log("Before sorting:", images);
     const sortedImages = sortImages(images);
-    console.log("After sorting:", sortedImages);
     return sortedImages.map((item, index) => {
       const imageUrl = item.imageUrl || item.matchedImageUrl;
+      const isSelected =
+        isMultiSelectMode &&
+        selectedImages.some(
+          (img) => img.index === index && img.imageType === imageType
+        );
+      const imageClass = isSelected ? "gallery-img selected" : "gallery-img";
+
       return (
         <div key={index} className="gallery-item">
           <img
             src={imageUrl}
             alt={`Gallery item ${index}`}
-            className="gallery-img"
+            className={imageClass}
             onClick={() => handleImageClick(imageUrl, index, imageType)}
           />
         </div>
@@ -237,6 +288,19 @@ function UploadFile() {
           Logger.error("Error deleting image:", error);
         });
     }
+  };
+
+  const confirmDeleteImage = () => {
+    setShowDeleteConfirmation(true);
+  };
+
+  const proceedWithDelete = () => {
+    setShowDeleteConfirmation(false);
+    handleDeleteImage(); // Your existing delete function
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteConfirmation(false);
   };
 
   useEffect(() => {
@@ -506,7 +570,7 @@ function UploadFile() {
   };
 
   const handleClickOutside = (event) => {
-    if (!event.target.closest('.sorting-dropdown')) {
+    if (!event.target.closest(".sorting-dropdown")) {
       setIsDropdownOpen(false);
     }
   };
@@ -514,18 +578,17 @@ function UploadFile() {
   useEffect(() => {
     if (isDropdownOpen) {
       // Attach the event listener
-      document.addEventListener('click', handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     } else {
       // Remove the event listener
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     }
 
     return () => {
       // Clean up
-      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [isDropdownOpen]);
-
 
   const containerStyle = {
     maxWidth: "100%", // allows the container to expand fully on all screen sizes
@@ -619,28 +682,62 @@ function UploadFile() {
       </Modal>
 
       <div className="d-flex justify-content-end mt-3">
-         <div className="sorting-dropdown">
+        <div className="sorting-dropdown">
+          {/* Sorting Dropdown */}
           <Button
             variant="primary"
             className="dropdown-toggle"
             id="dropdown-basic-button"
             title="Sort Images"
-            onClick={toggleDropdown} // Added onClick event
+            onClick={toggleDropdown}
+            style={{marginRight: "10px"}}
           >
-            Sort Images
+            <FontAwesomeIcon icon={faSort} />
           </Button>
-
           <div
-            className={`dropdown-menu ${isDropdownOpen ? 'show' : ''}`}
+            className={`dropdown-menu ${isDropdownOpen ? "show" : ""}`}
             aria-labelledby="dropdown-basic-button"
           >
-            <Button className="dropdown-item" onClick={() => setSortOrder("asc")}>
+            <Button
+              className="dropdown-item"
+              onClick={() => setSortOrder("asc")}
+            >
               Sort Ascending
             </Button>
-            <Button className="dropdown-item" onClick={() => setSortOrder("desc")}>
+            <Button
+              className="dropdown-item"
+              onClick={() => setSortOrder("desc")}
+            >
               Sort Descending
             </Button>
           </div>
+
+          {/* Multi-Select Dropdown */}
+          <Button
+            variant="primary"
+            className="dropdown-toggle ml-3" // Added margin-left for spacing
+            id="multi-select-dropdown-button"
+            title="Multi Select Options"
+            onClick={() => setIsMultiSelectMode(!isMultiSelectMode)}
+          >
+            <FontAwesomeIcon icon={faTasks} />
+          </Button>
+          {isMultiSelectMode && (
+            <div
+              className="dropdown-menu show"
+              aria-labelledby="multi-select-dropdown-button"
+            >
+              <Button
+                className="dropdown-item"
+                onClick={downloadSelectedImages}
+              >
+                <FontAwesomeIcon icon={faDownload} /> Download Selected
+              </Button>
+              <Button className="dropdown-item" onClick={exitMultiSelectMode}>
+                <FontAwesomeIcon icon={faClose} /> Exit Multi-Select
+              </Button>
+            </div>
+          )}
         </div>
         {isAdmin && (
           <Button
@@ -652,6 +749,7 @@ function UploadFile() {
             Upload Image
           </Button>
         )}
+
         <div
           style={{
             position: "absolute",
@@ -749,10 +847,11 @@ function UploadFile() {
                   </Dialog.Close>
                   <button
                     className="icon-button delete-icon"
-                    onClick={handleDeleteImage}
+                    onClick={confirmDeleteImage}
                   >
                     <FontAwesomeIcon icon={faTrashAlt} />
                   </button>
+
                   <button
                     className="icon-button download-icon"
                     onClick={() =>
@@ -797,6 +896,41 @@ function UploadFile() {
         </Toast.Header>
         <Toast.Body>Image successfully deleted!</Toast.Body>
       </Toast>
+      {showDeleteConfirmation && (
+        <Toast
+          onClose={cancelDelete}
+          show={showDeleteConfirmation}
+          delay={10000}
+          autohide={false}
+          style={{
+            position: "fixed",
+            top: "50%", // Center vertically
+            left: "50%", // Center horizontally
+            transform: "translate(-50%, -50%)", // Adjust for exact centering
+            zIndex: 1050, // Ensure it's above other elements
+            minWidth: "300px", // Optional: Set a minimum width
+          }}
+        >
+          <Toast.Header>
+            <strong className="mr-auto">Confirm Delete</strong>
+          </Toast.Header>
+          <Toast.Body>
+            Are you sure you want to delete this image?
+            <div className="mt-2 text-center">
+              <Button variant="danger" onClick={proceedWithDelete}>
+                Yes
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={cancelDelete}
+                style={{ marginLeft: "10px" }}
+              >
+                No
+              </Button>
+            </div>
+          </Toast.Body>
+        </Toast>
+      )}
       <style>
         {`
           /* CSS styles for the gallery */
@@ -1069,11 +1203,6 @@ function UploadFile() {
             box-shadow: 0 6px 12px rgba(0,0,0,.175);
           }
           
-          /* Hover state for both button and dropdown menu */
-          .sorting-dropdown:hover .dropdown-toggle,
-          .sorting-dropdown:hover .dropdown-menu {
-            display: block;
-          }
           
           .dropdown-item {
             padding: 10px 20px;
@@ -1089,7 +1218,7 @@ function UploadFile() {
           @media (max-width: 767px) {
             .btn-md, .dropdown-toggle, .dropdown-item {
               padding: 5px 10px;
-              font-size: 0.8rem;
+              font-size: 0.6rem;
               border-radius: 15px;
             }
           
@@ -1097,8 +1226,61 @@ function UploadFile() {
               display: block;
             }
           }
+
+          .selected {
+            border: 3px solid #40a5f3; /* Change as per your design */
+          }
+
+          .multi-select-dropdown {
+            position: relative;
+            margin-left: 20px;
+          }
           
+          .multi-select-dropdown .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            z-index: 1000;
+            display: none;
+            min-width: 160px;
+            padding: 5px 0;
+            margin: 2px 0 0;
+            font-size: 1rem;
+            color: #333;
+            text-align: left;
+            list-style: none;
+            background-color: #fff;
+            border: 1px solid rgba(0,0,0,.15);
+            border-radius: 5px;
+            box-shadow: 0 6px 12px rgba(0,0,0,.175);
+          }
           
+          .multi-select-dropdown .dropdown-menu.show {
+            display: block;
+          }
+          
+          .multi-select-dropdown .dropdown-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+          }
+          
+          .multi-select-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+          }
+
+          .controls-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+    
+          .sorting-dropdown {
+            display: flex;
+            align-items: center;
+          }
+
           
         `}
       </style>
