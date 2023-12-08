@@ -8,12 +8,12 @@ import { DirectoryPollerContext } from "../DirectoryPollerContext";
 
 function MonitorImages({ show, onHide, eventId }) {
   const [loading, setLoading] = useState(false);
-  const [showTick, setShowTick] = useState(false);
+  const [uploadedImageHash, setUploadedImageHash] = useState({}); // State for uploaded image hash
   const socketRef = useRef(null);
   const [isInputDisabled, setIsInputDisabled] = useState(false);
   const uploadInterval = useRef(null);
-  const uploadQueue = useRef(new PQueue({ concurrency: 5 })); // Manage concurrency
-  const uploadedImageHash = useRef({});
+  const uploadQueue = useRef(new PQueue({ concurrency: 5 }));
+
   const {
     url,
     setUrl,
@@ -33,11 +33,11 @@ function MonitorImages({ show, onHide, eventId }) {
         `${process.env.REACT_APP_API}/events/fetch-external-resource`,
         { params: { externalResourceUrl: url } }
       );
-
       const data = response.data;
       if (data.image_urls && Array.isArray(data.image_urls)) {
-        const uniqueNewImages = data.image_urls.filter(img => !uploadedImageHash.current[img]);
+        const uniqueNewImages = data.image_urls.filter(img => !uploadedImageHash[img]);
         setNewImages(prevNewImages => [...prevNewImages, ...uniqueNewImages]);
+        Logger.log('New images set:', uniqueNewImages.length);
       } else {
         Logger.error("Unexpected response format");
       }
@@ -48,17 +48,25 @@ function MonitorImages({ show, onHide, eventId }) {
     }
   };
 
+  const updateUploadedImageHash = (imageSrc) => {
+    setUploadedImageHash(prevHash => {
+      const updatedHash = { ...prevHash, [imageSrc]: true };
+      Logger.log("Updated state of uploadedImageHash:", Object.keys(updatedHash).length);
+      return updatedHash;
+    });
+  };
+
   const uploadImage = async (imageSrc) => {
     try {
+      Logger.log("Attempting to upload:", imageSrc);
+
       const response = await axios.get(
         `${process.env.REACT_APP_API}/events/fetch-image`,
         { params: { imageUrl: imageSrc }, responseType: "arraybuffer" }
       );
-
       const blob = new Blob([response.data], { type: "image/jpeg" });
       const formData = new FormData();
-      const imageName = imageSrc.split("/").pop().split("?")[0];
-      formData.append("galleryImage", blob, imageName);
+      formData.append("galleryImage", blob, imageSrc.split("/").pop().split("?")[0]);
 
       await axios.post(
         `${process.env.REACT_APP_API}/events/${eventId}/upload`,
@@ -67,27 +75,28 @@ function MonitorImages({ show, onHide, eventId }) {
       );
 
       setUploadedImages(prev => [...prev, imageSrc]);
-      Logger.log("image uploaded")
-      uploadedImageHash.current[imageSrc] = true; // Mark as uploaded
+      updateUploadedImageHash(imageSrc);
     } catch (error) {
       Logger.error("Error uploading image:", error);
     }
   };
 
   const uploadImages = () => {
+    Logger.log('Uploading new images, count:', newImages.length);
     newImages.forEach(imageSrc => {
-      if (!uploadedImageHash.current[imageSrc]) {
-        uploadedImageHash.current[imageSrc] = false; // Mark as in process
+      if (!uploadedImageHash[imageSrc]) {
         uploadQueue.current.add(() => uploadImage(imageSrc));
       }
     });
+    Logger.log('Current queue size:', uploadQueue.current.size);
   };
 
   const startMonitoringAndUploading = () => {
     setIsPollerRunning(true);
     setIsUploading(true);
     setIsInputDisabled(true);
-    uploadInterval.current = setInterval(monitorImages, 5000);
+    monitorImages();
+    uploadInterval.current = setInterval(monitorImages, 10000);
   };
 
   const stopUploading = () => {
@@ -96,7 +105,7 @@ function MonitorImages({ show, onHide, eventId }) {
     setIsInputDisabled(false);
     clearInterval(uploadInterval.current);
     uploadQueue.current.clear();
-    uploadedImageHash.current = {};
+    setUploadedImageHash({});
     setNewImages([]);
     setUploadedImages([]);
   };
@@ -116,19 +125,19 @@ function MonitorImages({ show, onHide, eventId }) {
   return (
     <Modal
       show={show}
-      onHide={onHide} // just call onHide, don't alter the poller's state
+      onHide={onHide}
       centered
     >
       <Modal.Header closeButton>
         <Modal.Title>Monitor External Directory</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-      <input
+        <input
           type="text"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder="Enter URL to monitor"
-          disabled={isInputDisabled} // Apply the disabled property
+          disabled={isInputDisabled}
           style={{ width: "100%", marginBottom: "10px" }}
         />
         <Button
@@ -150,8 +159,6 @@ function MonitorImages({ show, onHide, eventId }) {
         {isUploading && newImages.length === 0 && (
           <p>Waiting for new images...</p>
         )}
-        {showTick && <span>&#10003;</span>}{" "}
-        {/* Display the tick when showTick is true */}
       </Modal.Body>
     </Modal>
   );
