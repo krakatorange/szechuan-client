@@ -17,6 +17,7 @@ import {
   faSort,
   faTasks,
 } from "@fortawesome/free-solid-svg-icons";
+import PQueue from 'p-queue';
 
 function UploadFile() {
   const { eventId } = useParams();
@@ -59,6 +60,7 @@ function UploadFile() {
   const minSwipeDistance = 50;
   const [sortOrder, setSortOrder] = useState("none"); // 'asc', 'desc', or 'none'
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const uploadQueue = useRef(new PQueue({ concurrency: 5 })); // Adjust concurrency as needed
 
   useEffect(() => {
     // When the component mounts, set the currentEventId in your global state
@@ -317,89 +319,70 @@ function UploadFile() {
 
   const uploadFiles = (filesToUpload) => {
     Logger.log("uploadFiles function called with:", filesToUpload);
+  
     if (filesToUpload.length === 0) {
-      Logger.log("No files to upload."); // And this
+      Logger.log("No files to upload.");
       return;
-    } // if no files, just return
-
-    const YOUR_MAX_SIZE = 5 * 1024 * 1024;
-    // Start the loading bar when uploading begins
+    }
+  
+    const YOUR_MAX_SIZE = 15 * 1024 * 1024; // 15 MB size limit
     setUploadingStatus({ uploading: true, success: false, error: null });
-
-    const uploadNextFile = (index) => {
-      if (index < filesToUpload.length) {
-        const file = filesToUpload[index];
-        if (file.size > YOUR_MAX_SIZE) {
-          // define YOUR_MAX_SIZE in bytes
-          setUploadingStatus({
-            uploading: false,
-            success: false,
-            error: "The image size is too big",
-          });
-          return;
-        }
-        const formData = new FormData();
-        formData.append("galleryImage", file);
-
-        axios
-          .post(
-            `${process.env.REACT_APP_API}/events/${eventId}/upload`,
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-            }
-          )
-          .then(() => {
-            if (index === filesToUpload.length - 1) {
-              setSelectedFiles([]);
-              // Display success message
-              setUploadingStatus({
-                uploading: false,
-                success: true,
-                error: null,
-              });
-            }
-            uploadNextFile(index + 1);
-          })
-          .catch((error) => {
-            Logger.error("Error uploading files:");
-            if (error.message === "Image already exists in the gallery.") {
-              setUploadingStatus({
-                uploading: false,
-                success: false,
-                error: null,
-                exists: true,
-              });
-              fileInputRef.current.value = null;
-            } else {
-              setUploadingStatus({
-                uploading: false,
-                success: false,
-                error: "Image Already exists.",
-                exists: false,
-              });
-              fileInputRef.current.value = null;
-            }
-            setSelectedFiles([]);
-          });
-        axios
-          .get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
-          .then((response) => {
-            const formattedImages = response.data.map((img) => ({
-              imageUrl: img.imageUrl, // or simply img.imageUrl if the API sends it as imageUrl
-              timestamp: img.timestamp,
-            }));
-            setGalleryImages(formattedImages);
-          })
-          .catch((error) => {
-            Logger.error("Error fetching gallery images: ", error);
-          });
+  
+    filesToUpload.forEach((file, index) => {
+      if (file.size > YOUR_MAX_SIZE) {
+        Logger.error("File size too big:", file.name);
+        setUploadingStatus({
+          uploading: false,
+          success: false,
+          error: `File size too big: ${file.name}`,
+        });
+        return;
       }
-    };
-    uploadNextFile(0);
+      uploadQueue.current.add(() => uploadFile(file, index, filesToUpload.length));
+    });
   };
+  
+  const uploadFile = async (file, index, totalFiles) => {
+    const formData = new FormData();
+    formData.append("galleryImage", file);
+  
+    try {
+      await axios.post(
+        `${process.env.REACT_APP_API}/events/${eventId}/upload`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+  
+      // Fetch updated gallery images after each upload
+      await axios.get(`${process.env.REACT_APP_API}/events/${eventId}/gallery`)
+        .then((response) => {
+          const formattedImages = response.data.map((img) => ({
+            imageUrl: img.imageUrl,
+            timestamp: img.timestamp,
+          }));
+          setGalleryImages(formattedImages);
+        })
+        .catch((error) => {
+          Logger.error("Error fetching gallery images: ", error);
+        });
+  
+      if (index === totalFiles - 1) {
+        setSelectedFiles([]);
+        setUploadingStatus({ uploading: false, success: true, error: null });
+      }
+    } catch (error) {
+      Logger.error("Error uploading file:", error);
+      setUploadingStatus({ uploading: false, success: false, error: error.message });
+    }
+  };
+  
+  // Make sure to update your useEffect hook to trigger the upload
+  useEffect(() => {
+    if (selectedFiles.length > 0) {
+      uploadFiles(selectedFiles);
+    }
+  }, [selectedFiles]);
+  
 
   const fetchMatchedImages = () => {
     const apiUrl = `${process.env.REACT_APP_API}/events/matched/${userId}/${eventId}`;
@@ -1279,6 +1262,12 @@ function UploadFile() {
           .sorting-dropdown {
             display: flex;
             align-items: center;
+          }
+
+          .gallery-img.selected, 
+          .gallery-item:hover .gallery-img.selected {
+            border: 3px solid #40a5f3; /* Highlight color for selected images */
+            transform: none; /* Prevent scale transform on hover for selected images */
           }
 
           

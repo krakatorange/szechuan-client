@@ -182,7 +182,7 @@ function EventNotification({ event, onDelete, onEventUpdated }) {
         `}
       </style>
 
-      <div className="col-lg-5 col-md-12 mb-4">
+      <div className="mb-2">
         {/* Use an outer div to handle the card click */}
         <div
           className="card h-100"
